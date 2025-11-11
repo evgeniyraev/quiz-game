@@ -23,6 +23,7 @@ const saveSettingsBtn = document.getElementById('save-settings-btn');
 const exportSettingsBtn = document.getElementById('export-settings-btn');
 const importSettingsBtn = document.getElementById('import-settings-btn');
 const resetSettingsBtn = document.getElementById('reset-settings-btn');
+const playlistDropZone = document.getElementById('playlist-drop');
 const tabButtons = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('[data-tab-panel]');
 const mediaInputs = document.querySelectorAll('[data-media-key]');
@@ -370,6 +371,25 @@ const setupMediaInputs = () => {
   });
 };
 
+const handlePlaylistDrop = async (file) => {
+  if (!file) return;
+  const payload = { name: file.name };
+  if (file.path) {
+    payload.path = file.path;
+  } else if (file.arrayBuffer) {
+    const buffer = await file.arrayBuffer();
+    payload.buffer = Array.from(new Uint8Array(buffer));
+  }
+
+  const result = await window.configAPI.ingestAfterhours(payload);
+  if (!result.success) {
+    setStatus(result.message || 'Unable to ingest playlist media.', 'error');
+    return;
+  }
+
+  setStatus('Added to non-working playlist.', 'success');
+};
+
 saveSettingsBtn?.addEventListener('click', async () => {
   const payload = collectSettingsFromForm();
   const result = await window.configAPI.saveSettings(payload);
@@ -438,6 +458,36 @@ importSettingsBtn?.addEventListener('click', handleImportSettings);
 
 setupMediaInputs();
 
+if (playlistDropZone) {
+  ['dragenter', 'dragover'].forEach((eventName) => {
+    playlistDropZone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      playlistDropZone.classList.add('active');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach((eventName) => {
+    playlistDropZone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      playlistDropZone.classList.remove('active');
+    });
+  });
+
+  playlistDropZone.addEventListener('drop', (event) => {
+    const file = event.dataTransfer?.files?.[0];
+    handlePlaylistDrop(file);
+  });
+
+  playlistDropZone.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'video/*';
+      input.onchange = () => handlePlaylistDrop(input.files?.[0]);
+      input.click();
+    }
+  });
+}
 tabButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.tabTarget;

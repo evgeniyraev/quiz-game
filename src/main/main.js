@@ -9,6 +9,7 @@ const PIN_CODE = process.env.APP_PIN || '4242';
 const isDev = !app.isPackaged;
 
 const SETTINGS_FILENAME = 'settings.yaml';
+const PLAYLIST_DIRNAME = 'afterhours';
 
 const defaultSettings = () => ({
   workingDirectory: '',
@@ -104,6 +105,7 @@ const resolveMediaPath = (relativePath) => {
 const updateResolvedMedia = () => {
   const media = quizState.settings.media || {};
   quizState.mediaResolved = {
+    pinVideo: resolveMediaPath(media.pinVideo),
     idleVideo: resolveMediaPath(media.idleVideo),
     quizVideo: resolveMediaPath(media.quizVideo),
     winVideo: resolveMediaPath(media.winVideo),
@@ -818,6 +820,50 @@ ipcMain.handle('ingest-media', async (_event, payload = {}) => {
     return {
       success: false,
       message: error.message || 'Unable to process media file.',
+    };
+  }
+});
+
+ipcMain.handle('ingest-afterhours', async (_event, payload = {}) => {
+  const workingDir = requireWorkingDirectory();
+  const playlistDir = path.join(workingDir, PLAYLIST_DIRNAME);
+  ensureDirExists(playlistDir);
+  const { path: sourcePath, name, buffer, weight = 1 } = payload;
+
+  const extension =
+    path.extname(name || sourcePath || '') || (payload.isImage ? '.png' : '.mp4');
+  const safeName = `${Date.now()}${extension}`;
+  const destination = path.join(playlistDir, safeName);
+
+  try {
+    if (sourcePath) {
+      moveFile(sourcePath, destination);
+    } else if (buffer) {
+      fs.writeFileSync(destination, Buffer.from(buffer));
+    } else {
+      throw new Error('Missing file data.');
+    }
+
+    const relativePath = path.join(PLAYLIST_DIRNAME, safeName);
+    quizState.settings.nonWorkingPlaylist = [
+      ...(quizState.settings.nonWorkingPlaylist || []),
+      {
+        id: `nonworking-${Date.now()}`,
+        file: relativePath,
+        weight: Number(weight) || 1,
+      },
+    ];
+
+    persistQuizState();
+    updateResolvedMedia();
+    writeSettingsYaml();
+    broadcastQuizUpdate();
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'Unable to ingest playlist media.',
     };
   }
 });

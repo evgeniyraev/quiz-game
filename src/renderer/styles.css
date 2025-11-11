@@ -334,6 +334,19 @@ button.secondary {
   margin-top: 16px;
 }
 
+#playlist-drop {
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+#playlist-drop.active {
+  border-color: #8ff5c1;
+  background: rgba(143, 245, 193, 0.08);
+}
+
 .input-row {
   display: flex;
   gap: 8px;

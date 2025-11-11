@@ -101,8 +101,17 @@
         <div class="button-row small">
           <button type="button" id="export-settings-btn">Export YAML</button>
           <button type="button" id="import-settings-btn">Import YAML</button>
+          <button type="button" id="save-settings-btn-media">Save</button>
           <button type="button" id="reset-settings-btn" class="danger">Reset All</button>
         </div>
+
+        <section id="non-working">
+          <h2>Non-working Playlist</h2>
+          <div id="playlist-drop" tabindex="0">
+            <p>Drop videos here to add to afterhours playlist</p>
+          </div>
+          <ul id="playlist-list"></ul>
+        </section>
       </section>
     </main>
     <script src="./configRenderer.js"></script>
