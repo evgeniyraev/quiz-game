@@ -4,6 +4,7 @@ const fs = require('fs');
 const XLSX = require('xlsx');
 
 const PIN_CODE = process.env.APP_PIN || '4242';
+const isDev = !app.isPackaged;
 
 const createDefaultQuizState = () => ({
   questions: [
@@ -50,11 +51,17 @@ const createMainWindow = () => {
   mainWindow.webContents.openDevTools({ mode: 'detach' });
 };
 
+const shouldShowConfigWindow = () =>
+  !quizState?.questions?.length || quizState?.metadata?.source === 'Default';
+
 const createConfigWindow = () => {
   configWindow = new BrowserWindow({
-    width: 420,
-    height: 640,
-    resizable: false,
+    width: isDev ? 480 : 600,
+    height: isDev ? 720 : 800,
+    show: false,
+    resizable: isDev,
+    movable: true,
+    fullscreen: !isDev,
     title: 'Question Config',
     webPreferences: {
       contextIsolation: true,
@@ -65,7 +72,37 @@ const createConfigWindow = () => {
   });
 
   configWindow.loadFile(path.join(__dirname, '../renderer/config.html'));
-  configWindow.webContents.openDevTools({ mode: 'detach' });
+  if (isDev) {
+    configWindow.webContents.openDevTools({ mode: 'detach' });
+  }
+
+  configWindow.once('ready-to-show', () => {
+    if (shouldShowConfigWindow()) {
+      showConfigWindow();
+    }
+  });
+
+  configWindow.on('closed', () => {
+    configWindow = null;
+  });
+};
+
+const ensureConfigWindow = () => {
+  if (!configWindow) {
+    createConfigWindow();
+  }
+};
+
+const showConfigWindow = () => {
+  ensureConfigWindow();
+  if (!configWindow) return;
+
+  if (!isDev) {
+    configWindow.setFullScreen(true);
+  }
+
+  configWindow.show();
+  configWindow.focus();
 };
 
 const getPersistPath = () => path.join(app.getPath('userData'), 'quiz-state.json');
@@ -433,13 +470,6 @@ ipcMain.handle('draw-award', () => {
 });
 
 ipcMain.handle('focus-config', () => {
-  if (configWindow) {
-    if (configWindow.isMinimized()) {
-      configWindow.restore();
-    }
-
-    configWindow.focus();
-  }
-
+  showConfigWindow();
   return { success: true };
 });

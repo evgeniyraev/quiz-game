@@ -68,14 +68,21 @@ const updateAnswerOptionClasses = (reveal = false) => {
   });
 };
 
-const lockQuizForReauth = () => {
+const unlockToPinScreen = (message) => {
   unlocked = false;
-  selectedAnswer = null;
   pinInput.value = '';
-  pinError.textContent = 'Please re-enter PIN to continue.';
+  selectedAnswer = null;
+  clearAdvanceTimer();
+  if (message) {
+    pinError.textContent = message;
+  }
   pinSection.classList.remove('hidden');
   questionSection.classList.add('hidden');
   awardSection.classList.add('hidden');
+};
+
+const lockQuizForReauth = () => {
+  unlockToPinScreen('Please re-enter PIN to continue.');
 };
 
 const triggerReauth = () => {
@@ -275,10 +282,7 @@ answerList.addEventListener('click', (event) => {
 });
 
 restartButton.addEventListener('click', () => {
-  if (!quizData) return;
-  hideAwardSection();
-  currentIndex = 0;
-  renderQuestion();
+  unlockToPinScreen();
 });
 
 pinForm.addEventListener('submit', async (event) => {
@@ -297,6 +301,7 @@ pinForm.addEventListener('submit', async (event) => {
 
   if (!response.success) {
     pinError.textContent = response.message || 'Unable to validate PIN.';
+    pinInput.value = '';
     return;
   }
 
