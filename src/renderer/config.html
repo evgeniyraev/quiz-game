@@ -15,26 +15,94 @@
         <p class="muted">Drop an .xlsx file with Question, Answer columns (A–Z), and a Correct column.</p>
       </header>
 
-      <section id="drop-zone" tabindex="0">
-        <p>Drag & drop Excel file here</p>
-        <span>.xlsx only</span>
-      </section>
-
       <section id="config-status" aria-live="polite"></section>
 
-      <section id="preview">
-        <header>
-          <h2>Current Preview</h2>
-          <span id="question-count"></span>
-        </header>
-        <p id="preview-question"></p>
-        <ul id="preview-answers"></ul>
-        <p class="muted" id="preview-meta"></p>
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab-target="setup">Setup</button>
+        <button class="tab-btn" data-tab-target="media">Media</button>
+      </div>
+
+      <section class="tab-panel" data-tab-panel="setup">
+        <div id="working-dir-warning" class="callout hidden">
+          <p>Select a working directory to enable all controls.</p>
+          <button type="button" id="choose-dir-callout">Choose Directory</button>
+        </div>
+        <div id="import-warning" class="callout hidden">
+          <p>No configuration found in this directory. Import an existing YAML export?</p>
+          <button type="button" id="import-settings-callout">Import Config</button>
+        </div>
+
+        <h2>Working Directory</h2>
+        <div class="input-row">
+          <input id="working-dir" type="text" readonly placeholder="Select directory to store media" />
+          <button type="button" id="choose-dir-btn">Browse</button>
+        </div>
+
+        <h2>Working Hours</h2>
+        <div class="input-row">
+          <label for="working-start">Start</label>
+          <input id="working-start" type="time" />
+          <label for="working-end">End</label>
+          <input id="working-end" type="time" />
+          <button type="button" id="save-settings-btn">Save</button>
+        </div>
+
+        <section id="drop-zone" tabindex="0">
+          <p>Drag & drop Excel file here</p>
+          <span>.xlsx only</span>
+        </section>
+
+        <section id="preview">
+          <header>
+            <h2>Current Preview</h2>
+            <span id="question-count"></span>
+          </header>
+          <p id="preview-question"></p>
+          <ul id="preview-answers"></ul>
+          <p class="muted" id="preview-meta"></p>
+        </section>
+
+        <section id="awards">
+          <h2>Awards</h2>
+          <ul id="award-list"></ul>
+        </section>
+
+        <section id="non-working">
+          <h2>Non-working Playlist</h2>
+          <ul id="playlist-list"></ul>
+        </section>
       </section>
 
-      <section id="awards">
-        <h2>Awards</h2>
-        <ul id="award-list"></ul>
+      <section class="tab-panel hidden" data-tab-panel="media">
+        <h2>Media Backgrounds</h2>
+        <p class="muted">Drop a video or image onto a field to copy it into the working directory.</p>
+        <div class="media-grid">
+          <label>
+            Pin Video
+            <input id="pin-video-input" type="text" placeholder="pin.mp4" data-media-key="pinVideo" />
+          </label>
+          <label>
+            Idle Video
+            <input id="idle-video-input" type="text" placeholder="idle.mp4" data-media-key="idleVideo" />
+          </label>
+          <label>
+            Quiz Video
+            <input id="quiz-video-input" type="text" placeholder="quiz.mp4" data-media-key="quizVideo" />
+          </label>
+          <label>
+            Win Video
+            <input id="win-video-input" type="text" placeholder="win.mp4" data-media-key="winVideo" />
+          </label>
+          <label>
+            Lose Media
+            <input id="lose-video-input" type="text" placeholder="lose.mp4" data-media-key="loseVideo" />
+          </label>
+        </div>
+        <div class="button-row small">
+          <button type="button" id="export-settings-btn">Export YAML</button>
+          <button type="button" id="import-settings-btn">Import YAML</button>
+          <button type="button" id="reset-settings-btn" class="danger">Reset All</button>
+        </div>
       </section>
     </main>
     <script src="./configRenderer.js"></script>

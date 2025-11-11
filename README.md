@@ -14,8 +14,21 @@ Two windows will appear:
 - **Quiz Console** (main window) – prompts for a PIN. The default PIN is `4242` and can be overridden via the `APP_PIN` environment variable.
 - **Question Config** (side window) – accepts Excel files to update the question and answers in real time.
 - Both windows open Chrome DevTools in a detached inspector by default so you can debug renderers immediately.
-- The quiz window uses an onscreen keypad for PIN entry. After an incorrect answer the quiz locks, highlights the choice in red, and requires the PIN again before continuing.
+- The quiz window uses an onscreen keypad for PIN entry. After an incorrect answer the quiz locks, plays the configured “lose” media, and requires the PIN again before continuing.
 - The latest imported configuration is persisted between launches. If no configuration is available the quiz window displays a warning; long-press the top-left corner for five seconds to bring the config window to the front at any time.
+
+## Media & working hours
+
+- Open the **Question Config** window to pick a working directory, working hours, and the media files for each state (idle, quiz, win, lose). Paths are relative to the selected directory so you can keep videos, audio, and YAML exports together.
+  - `Pin` media is used when the PIN keypad is visible.
+  - `Idle` media acts as a screensaver during working hours; tapping it reveals the PIN screen.
+- Use the **Export YAML** / **Import YAML** buttons to back up or restore the full settings bundle.
+- Working hours are a simple daily start/end. Outside those hours the quiz console hides all controls and continuously plays the probability-weighted non-working playlist from the Excel file.
+- During open hours the console automatically plays:
+  - Idle video when waiting for a contestant.
+  - Quiz video while questions are on screen.
+  - Win video when a prize is awarded (prize text overlays on top).
+  - Lose media when a wrong answer is given before returning to the PIN screen.
 
 ## Excel format
 
@@ -38,6 +51,14 @@ The importer expects a workbook with at least one sheet named however you like (
   - `Probability` (relative weight for random selection)
   - `Count` (number of times this award can be given out)
 - After the last question the quiz calls into the award table, draws a prize using the weighted probabilities, and decrements the remaining count. Once an award runs out it drops out of the pool automatically.
+
+### Sheet 3 – NonWorking (after-hours playlist)
+
+- Optional but used whenever the venue is outside working hours.
+- Columns:
+  - `Video` (relative path under the working directory)
+  - `Weight` (probability weight for the random selector)
+- The playlist cycles through videos using the supplied weights without repeating the same entry twice in a row.
 
 ### Importing
 

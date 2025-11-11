@@ -5,6 +5,48 @@ const previewAnswers = document.getElementById('preview-answers');
 const previewMeta = document.getElementById('preview-meta');
 const questionCount = document.getElementById('question-count');
 const awardList = document.getElementById('award-list');
+const playlistList = document.getElementById('playlist-list');
+const workingDirInput = document.getElementById('working-dir');
+const chooseDirBtn = document.getElementById('choose-dir-btn');
+const chooseDirCalloutBtn = document.getElementById('choose-dir-callout');
+const workingDirWarning = document.getElementById('working-dir-warning');
+const importWarning = document.getElementById('import-warning');
+const importSettingsCalloutBtn = document.getElementById('import-settings-callout');
+const workingStartInput = document.getElementById('working-start');
+const workingEndInput = document.getElementById('working-end');
+const idleVideoInput = document.getElementById('idle-video-input');
+const quizVideoInput = document.getElementById('quiz-video-input');
+const winVideoInput = document.getElementById('win-video-input');
+const loseVideoInput = document.getElementById('lose-video-input');
+const pinVideoInput = document.getElementById('pin-video-input');
+const saveSettingsBtn = document.getElementById('save-settings-btn');
+const exportSettingsBtn = document.getElementById('export-settings-btn');
+const importSettingsBtn = document.getElementById('import-settings-btn');
+const resetSettingsBtn = document.getElementById('reset-settings-btn');
+const tabButtons = document.querySelectorAll('.tab-btn');
+const tabPanels = document.querySelectorAll('[data-tab-panel]');
+const mediaInputs = document.querySelectorAll('[data-media-key]');
+
+const defaultSettings = {
+  workingDirectory: '',
+  workingHours: { start: '09:00', end: '21:00' },
+  media: {
+    idleVideo: '',
+    quizVideo: '',
+    winVideo: '',
+    loseVideo: '',
+  },
+  nonWorkingPlaylist: [],
+};
+
+const cloneSettings = (settings) =>
+  typeof structuredClone === 'function'
+    ? structuredClone(settings)
+    : JSON.parse(JSON.stringify(settings));
+
+let settingsState = cloneSettings(defaultSettings);
+let needsConfigImport = false;
+let quizSnapshot = null;
 
 const setStatus = (message, tone = 'info') => {
   statusEl.textContent = message || '';
@@ -16,6 +58,15 @@ const describeQuestions = (questions = []) => {
   const count = questions.length;
   if (!count) return '0 questions';
   return `${count} question${count === 1 ? '' : 's'}`;
+};
+
+const setActiveTab = (target) => {
+  tabButtons.forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.tabTarget === target);
+  });
+  tabPanels.forEach((panel) => {
+    panel.classList.toggle('hidden', panel.dataset.tabPanel !== target);
+  });
 };
 
 const setPreviewQuestion = (question) => {
@@ -70,6 +121,28 @@ const renderAwards = (awards = []) => {
   });
 };
 
+const renderPlaylist = (playlist = []) => {
+  playlistList.innerHTML = '';
+
+  if (!playlist.length) {
+    const li = document.createElement('li');
+    li.textContent = 'No after-hours playlist configured.';
+    playlistList.appendChild(li);
+    return;
+  }
+
+  playlist.forEach((entry) => {
+    const li = document.createElement('li');
+    const label = document.createElement('span');
+    const weight = document.createElement('span');
+    label.textContent = entry.file || '—';
+    weight.textContent = `Weight: ${entry.weight}`;
+    li.appendChild(label);
+    li.appendChild(weight);
+    playlistList.appendChild(li);
+  });
+};
+
 const renderPreview = (quiz) => {
   if (!quiz) return;
 
@@ -86,6 +159,65 @@ const renderPreview = (quiz) => {
   } else {
     previewMeta.textContent = '';
   }
+};
+
+const setControlsEnabled = (enabled) => {
+  const buttons = [saveSettingsBtn, exportSettingsBtn, importSettingsBtn];
+  buttons.forEach((btn) => {
+    if (btn) btn.disabled = !enabled;
+  });
+  mediaInputs.forEach((input) => {
+    input.disabled = !enabled;
+  });
+};
+
+const updateWorkingDirWarnings = () => {
+  const hasDir = Boolean(settingsState.workingDirectory);
+  if (workingDirWarning) {
+    workingDirWarning.classList.toggle('hidden', hasDir);
+  }
+  if (importWarning) {
+    importWarning.classList.toggle('hidden', !(hasDir && needsConfigImport));
+  }
+  setControlsEnabled(hasDir);
+};
+
+const applySettingsToForm = (settings = defaultSettings) => {
+  settingsState = {
+    ...defaultSettings,
+    ...settings,
+    workingHours: {
+      ...defaultSettings.workingHours,
+      ...(settings.workingHours || {}),
+    },
+    media: {
+      ...defaultSettings.media,
+      ...(settings.media || {}),
+    },
+    nonWorkingPlaylist: settings.nonWorkingPlaylist || [],
+  };
+
+  if (workingDirInput) {
+    workingDirInput.value = settingsState.workingDirectory || '';
+  }
+
+  if (workingStartInput) workingStartInput.value = settingsState.workingHours.start;
+  if (workingEndInput) workingEndInput.value = settingsState.workingHours.end;
+  if (idleVideoInput) idleVideoInput.value = settingsState.media.idleVideo;
+  if (quizVideoInput) quizVideoInput.value = settingsState.media.quizVideo;
+  if (winVideoInput) winVideoInput.value = settingsState.media.winVideo;
+  if (loseVideoInput) loseVideoInput.value = settingsState.media.loseVideo;
+  if (pinVideoInput) pinVideoInput.value = settingsState.media.pinVideo;
+  renderPlaylist(settingsState.nonWorkingPlaylist);
+  updateWorkingDirWarnings();
+};
+
+const renderQuizData = (quiz) => {
+  if (!quiz) return;
+  quizSnapshot = quiz;
+  renderPreview(quiz);
+  applySettingsToForm(quiz.settings);
+  needsConfigImport = false;
 };
 
 const buildPayload = async (file) => {
@@ -117,7 +249,7 @@ const handleFileList = async (files) => {
   }
 
   setStatus(`Loaded ${file.name}`, 'success');
-  renderPreview(result.quiz);
+  renderQuizData(result.quiz);
 };
 
 ['dragenter', 'dragover'].forEach((eventName) => {
@@ -153,8 +285,182 @@ dropZone.addEventListener('keydown', (event) => {
   }
 });
 
-window.configAPI.requestQuiz().then(renderPreview);
-window.configAPI.onQuizUpdated(renderPreview);
+window.configAPI.requestQuiz().then(renderQuizData);
+window.configAPI.onQuizUpdated(renderQuizData);
 
 window.addEventListener('dragover', (event) => event.preventDefault());
 window.addEventListener('drop', (event) => event.preventDefault());
+
+const collectSettingsFromForm = () => ({
+  workingHours: {
+    start: workingStartInput?.value || defaultSettings.workingHours.start,
+    end: workingEndInput?.value || defaultSettings.workingHours.end,
+  },
+  media: {
+    pinVideo: pinVideoInput?.value.trim() || '',
+    idleVideo: idleVideoInput?.value.trim() || '',
+    quizVideo: quizVideoInput?.value.trim() || '',
+    winVideo: winVideoInput?.value.trim() || '',
+    loseVideo: loseVideoInput?.value.trim() || '',
+  },
+});
+
+const handleMediaIngest = async (key, file) => {
+  if (!file || !key) return;
+  const payload = {
+    key,
+    name: file.name,
+  };
+
+  if (file.path) {
+    payload.path = file.path;
+  } else if (file.arrayBuffer) {
+    const buffer = await file.arrayBuffer();
+    payload.buffer = Array.from(new Uint8Array(buffer));
+  }
+
+  const result = await window.configAPI.ingestMedia(payload);
+  if (!result.success) {
+    setStatus(result.message || 'Unable to ingest media.', 'error');
+    return;
+  }
+
+  const input = document.querySelector(`[data-media-key="${key}"]`);
+  if (input) {
+    input.value = result.relativePath || '';
+  }
+
+  settingsState.media[key] = result.relativePath || '';
+  const saveResult = await window.configAPI.saveSettings({ media: { [key]: result.relativePath || '' } });
+  if (!saveResult.success) {
+    setStatus(saveResult.message || 'Unable to save media settings.', 'error');
+    return;
+  }
+
+  if (saveResult.settings) {
+    applySettingsToForm(saveResult.settings);
+  }
+
+  setStatus('Media updated.', 'success');
+};
+
+const setupMediaInputs = () => {
+  mediaInputs.forEach((input) => {
+    const key = input.dataset.mediaKey;
+    if (!key) return;
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+      input.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        input.classList.add('drag-active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+      input.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        input.classList.remove('drag-active');
+      });
+    });
+
+    input.addEventListener('drop', (event) => {
+      const file = event.dataTransfer?.files?.[0];
+      handleMediaIngest(key, file);
+    });
+  });
+};
+
+saveSettingsBtn?.addEventListener('click', async () => {
+  const payload = collectSettingsFromForm();
+  const result = await window.configAPI.saveSettings(payload);
+  if (!result.success) {
+    setStatus(result.message || 'Unable to save settings.', 'error');
+    return;
+  }
+  if (result.settings) {
+    applySettingsToForm(result.settings);
+  }
+  setStatus('Settings saved.', 'success');
+});
+
+const handleChooseDirectory = async () => {
+  const result = await window.configAPI.selectWorkingDirectory();
+  if (!result.success) {
+    setStatus(result.message || 'No directory selected.', 'error');
+    return;
+  }
+
+  needsConfigImport = Boolean(result.needsImport);
+  const mergedSettings = result.settings || {
+    ...settingsState,
+    workingDirectory: result.path,
+  };
+  applySettingsToForm(mergedSettings);
+
+  if (quizSnapshot) {
+    renderPreview({ ...quizSnapshot, settings: mergedSettings });
+    quizSnapshot = { ...quizSnapshot, settings: mergedSettings };
+  }
+  updateWorkingDirWarnings();
+  setActiveTab(needsConfigImport ? 'setup' : 'media');
+  setStatus('Working directory updated.', 'success');
+};
+
+chooseDirBtn?.addEventListener('click', handleChooseDirectory);
+
+exportSettingsBtn?.addEventListener('click', async () => {
+  const result = await window.configAPI.exportSettings();
+  if (!result.success) {
+    setStatus(result.message || 'Export canceled.', 'error');
+    return;
+  }
+  setStatus('Settings exported.', 'success');
+});
+
+const handleImportSettings = async () => {
+  const result = await window.configAPI.importSettingsFile();
+  if (!result.success) {
+    setStatus(result.message || 'Import canceled.', 'error');
+    return;
+  }
+  needsConfigImport = false;
+  setStatus('Settings imported.', 'success');
+  if (result.settings) {
+    applySettingsToForm(result.settings);
+    if (quizSnapshot) {
+      renderPreview({ ...quizSnapshot, settings: result.settings });
+      quizSnapshot = { ...quizSnapshot, settings: result.settings };
+    }
+  }
+};
+
+importSettingsBtn?.addEventListener('click', handleImportSettings);
+
+setupMediaInputs();
+
+tabButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.tabTarget;
+    if (!settingsState.workingDirectory && target !== 'setup') {
+      setStatus('Please select a working directory first.', 'error');
+      return;
+    }
+    setActiveTab(target);
+  });
+});
+
+chooseDirCalloutBtn?.addEventListener('click', handleChooseDirectory);
+importSettingsCalloutBtn?.addEventListener('click', handleImportSettings);
+resetSettingsBtn?.addEventListener('click', async () => {
+  const confirmed = window.confirm(
+    'This will erase all settings and cached quiz data. Continue?',
+  );
+  if (!confirmed) return;
+  const result = await window.configAPI.resetSettings();
+  if (!result.success) {
+    setStatus(result.message || 'Unable to reset settings.', 'error');
+    return;
+  }
+  setStatus('Settings reset. Please configure working directory again.', 'success');
+  window.configAPI.requestQuiz().then(renderQuizData);
+});
