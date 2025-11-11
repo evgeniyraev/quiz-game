@@ -23,6 +23,7 @@ Two windows will appear:
   - `Pin` media is used when the PIN keypad is visible.
   - `Idle` media acts as a screensaver during working hours; tapping it reveals the PIN screen.
 - Use the **Export YAML** / **Import YAML** buttons to back up or restore the full settings bundle.
+- Use **Export Working Dir** to copy the entire working directory (media, settings, playlists, Excel files) to a removable drive. Each exported package includes a `.galacticblackfriday` marker and `settings.yaml` so the runtime can auto-import it when the drive is attached.
 - Working hours are a simple daily start/end. Outside those hours the quiz console hides all controls and continuously plays the probability-weighted non-working playlist from the Excel file.
 - During open hours the console automatically plays:
   - Idle video when waiting for a contestant.
@@ -80,3 +81,4 @@ src/
 
 - Plug the quiz window into real scoring logic or answer validation.
 - Persist imported questions or support multiple rows for future navigation.
+- Attach a USB drive that contains a folder with `settings.yaml` (or the `.galacticblackfriday` marker) and the app automatically imports it into the working directory, refreshing media and playlists on the fly.

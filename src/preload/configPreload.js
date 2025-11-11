@@ -8,7 +8,13 @@ contextBridge.exposeInMainWorld('configAPI', {
   exportSettings: () => ipcRenderer.invoke('export-settings'),
   importSettingsFile: () => ipcRenderer.invoke('import-settings'),
   ingestMedia: (payload) => ipcRenderer.invoke('ingest-media', payload),
+  ingestAfterhours: (payload) => ipcRenderer.invoke('ingest-afterhours', payload),
+  exportWorkingDirectory: () => ipcRenderer.invoke('export-working-directory'),
   resetSettings: () => ipcRenderer.invoke('reset-settings'),
+  onSyncMessage: (callback) => {
+    ipcRenderer.removeAllListeners('sync-message');
+    ipcRenderer.on('sync-message', (_event, message) => callback(message));
+  },
   onQuizUpdated: (callback) => {
     ipcRenderer.removeAllListeners('quiz-updated');
     ipcRenderer.on('quiz-updated', (_event, payload) => callback(payload));

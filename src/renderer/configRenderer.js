@@ -20,9 +20,11 @@ const winVideoInput = document.getElementById('win-video-input');
 const loseVideoInput = document.getElementById('lose-video-input');
 const pinVideoInput = document.getElementById('pin-video-input');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
+const saveSettingsBtnMedia = document.getElementById('save-settings-btn-media');
 const exportSettingsBtn = document.getElementById('export-settings-btn');
 const importSettingsBtn = document.getElementById('import-settings-btn');
 const resetSettingsBtn = document.getElementById('reset-settings-btn');
+const exportWorkingBtn = document.getElementById('export-working-btn');
 const playlistDropZone = document.getElementById('playlist-drop');
 const tabButtons = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('[data-tab-panel]');
@@ -288,6 +290,7 @@ dropZone.addEventListener('keydown', (event) => {
 
 window.configAPI.requestQuiz().then(renderQuizData);
 window.configAPI.onQuizUpdated(renderQuizData);
+window.configAPI.onSyncMessage((message) => setStatus(message, 'success'));
 
 window.addEventListener('dragover', (event) => event.preventDefault());
 window.addEventListener('drop', (event) => event.preventDefault());
@@ -388,6 +391,7 @@ const handlePlaylistDrop = async (file) => {
   }
 
   setStatus('Added to non-working playlist.', 'success');
+  window.configAPI.requestQuiz().then(renderQuizData);
 };
 
 saveSettingsBtn?.addEventListener('click', async () => {
@@ -401,6 +405,19 @@ saveSettingsBtn?.addEventListener('click', async () => {
     applySettingsToForm(result.settings);
   }
   setStatus('Settings saved.', 'success');
+});
+
+saveSettingsBtnMedia?.addEventListener('click', async () => {
+  const payload = collectSettingsFromForm();
+  const result = await window.configAPI.saveSettings(payload);
+  if (!result.success) {
+    setStatus(result.message || 'Unable to save settings.', 'error');
+    return;
+  }
+  if (result.settings) {
+    applySettingsToForm(result.settings);
+  }
+  setStatus('Media settings saved.', 'success');
 });
 
 const handleChooseDirectory = async () => {
@@ -435,6 +452,15 @@ exportSettingsBtn?.addEventListener('click', async () => {
     return;
   }
   setStatus('Settings exported.', 'success');
+});
+
+exportWorkingBtn?.addEventListener('click', async () => {
+  const result = await window.configAPI.exportWorkingDirectory();
+  if (!result.success) {
+    setStatus(result.message || 'Working directory export canceled.', 'error');
+    return;
+  }
+  setStatus(`Exported working directory to ${result.path}`, 'success');
 });
 
 const handleImportSettings = async () => {
