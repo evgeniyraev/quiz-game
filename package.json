@@ -1,0 +1,20 @@
+{
+  "name": "galacticblackfriday",
+  "version": "1.0.0",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "lint": "echo \"No lint step configured\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "electron": "^39.1.2"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}

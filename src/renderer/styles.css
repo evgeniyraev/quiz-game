@@ -1,0 +1,334 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #090b16;
+  color: #f4f6fb;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1c1f3a, #05060f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+body.config {
+  background: radial-gradient(circle at top, #14261c, #040806);
+}
+
+.card {
+  background: rgba(12, 14, 32, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.config-card {
+  max-width: 360px;
+}
+
+h1,
+h2 {
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+  color: #9aa2d5;
+}
+
+.muted {
+  color: #a7adc9;
+  font-size: 0.85rem;
+}
+
+#pin-form {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+#pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+#pin-keypad button {
+  padding: 18px 0;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#pin-keypad button.wide {
+  grid-column: span 3;
+}
+
+#pin-keypad button.small {
+  font-size: 0.85rem;
+}
+
+#pin-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  font-size: 1.5rem;
+  padding: 16px;
+  color: inherit;
+  letter-spacing: 0.4rem;
+  text-align: center;
+}
+
+button {
+  border: none;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #5f5fff, #7b15ff);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#pin-error {
+  color: #ff6b6b;
+  min-height: 1.2rem;
+  margin-top: 12px;
+}
+
+.hidden {
+  display: none;
+}
+
+#question-section {
+  border: 1px solid transparent;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.warning {
+  color: #f6c177;
+  margin: 8px 0 0;
+  min-height: 1rem;
+}
+
+#answer-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+#answer-list li {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 64px;
+}
+
+#answer-list .label {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  font-weight: 600;
+  color: #8fb0ff;
+}
+
+#answer-list .text {
+  flex: 1;
+  font-size: 1.05rem;
+}
+
+.answer-option {
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.answer-option.selected {
+  border-color: #7b15ff;
+  background: rgba(123, 21, 255, 0.15);
+}
+
+.answer-option.correct {
+  border-color: #3dd598;
+  background: rgba(61, 213, 152, 0.15);
+}
+
+.answer-option.incorrect {
+  border-color: #ff6b6b;
+}
+
+#question-progress {
+  margin: 4px 0 12px;
+}
+
+#question-footer {
+  min-height: 24px;
+  margin-top: 16px;
+}
+
+#question-error {
+  color: #ff8585;
+  min-height: 1.2rem;
+  margin-top: 12px;
+}
+
+#question-section {
+  transition: border-color 0.2s, background 0.2s;
+}
+
+#question-section.correct-state {
+  border: 1px solid rgba(61, 213, 152, 0.8);
+  background: rgba(61, 213, 152, 0.1);
+}
+
+#question-section.incorrect-state {
+  border: 1px solid rgba(255, 107, 107, 0.8);
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.award-card {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.award-card #award-name {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 12px 0;
+}
+
+.award-card #award-details {
+  margin-bottom: 20px;
+}
+
+button.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#config-hotspot {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  width: 64px;
+  height: 64px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+}
+
+#config-hotspot:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+}
+
+#drop-zone {
+  margin: 24px 0;
+  padding: 32px 24px;
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+#drop-zone.active {
+  border-color: #88f5c1;
+  background: rgba(136, 245, 193, 0.1);
+}
+
+#config-status {
+  min-height: 1.5rem;
+  font-size: 0.9rem;
+  color: #f6c177;
+}
+
+#preview {
+  margin-top: 16px;
+}
+
+#preview header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+#preview-answers {
+  list-style: none;
+  margin-top: 12px;
+}
+
+#preview-answers li {
+  margin-bottom: 6px;
+}
+
+.correct-answer {
+  color: #8ff5c1;
+}
+
+#question-count {
+  font-size: 0.85rem;
+  color: #a7adc9;
+}
+
+#award-list {
+  list-style: none;
+  margin-top: 12px;
+}
+
+#award-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#award-list span.label {
+  color: #8ff5c1;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}

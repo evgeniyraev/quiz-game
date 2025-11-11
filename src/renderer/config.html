@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Question Config</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="config">
+    <main class="card config-card">
+      <header>
+        <p class="eyebrow">Config</p>
+        <h1>Update Quiz</h1>
+        <p class="muted">Drop an .xlsx file with Question, Answer columns (A–Z), and a Correct column.</p>
+      </header>
+
+      <section id="drop-zone" tabindex="0">
+        <p>Drag & drop Excel file here</p>
+        <span>.xlsx only</span>
+      </section>
+
+      <section id="config-status" aria-live="polite"></section>
+
+      <section id="preview">
+        <header>
+          <h2>Current Preview</h2>
+          <span id="question-count"></span>
+        </header>
+        <p id="preview-question"></p>
+        <ul id="preview-answers"></ul>
+        <p class="muted" id="preview-meta"></p>
+      </section>
+
+      <section id="awards">
+        <h2>Awards</h2>
+        <ul id="award-list"></ul>
+      </section>
+    </main>
+    <script src="./configRenderer.js"></script>
+  </body>
+</html>
