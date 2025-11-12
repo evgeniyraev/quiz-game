@@ -85,5 +85,5 @@ src/
 
 ## Packaging & downloads
 
-- Build a Windows portable executable locally with `npm run build:win`. Artifacts are written to the `dist/` directory using `electron-builder`.
-- The GitHub Actions workflow `.github/workflows/build-windows.yml` runs on `workflow_dispatch` or tagged pushes (`v*`). It uploads the packaged app as an artifact and, for tags, attaches it to the GitHub release so it can be downloaded from the repository’s Releases page.
+- Build locally with `npm run build:win` (Windows portable EXE) or `npm run build:mac` (macOS DMG). Artifacts are written to `dist/` via `electron-builder`.
+- The GitHub Actions workflow `.github/workflows/build-windows.yml` runs on `workflow_dispatch` or tagged pushes (`v*`) to publish the Windows build as a GitHub Release asset.

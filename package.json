@@ -7,7 +7,8 @@
     "startEditing": "electron . -- --media-tab",
     "lint": "echo \"No lint step configured\"",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:win": "electron-builder --win portable"
+    "build:win": "electron-builder --win portable",
+    "build:mac": "electron-builder --mac dmg"
   },
   "keywords": [],
   "author": "",
@@ -39,6 +40,17 @@
           "target": "portable",
           "arch": [
             "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
           ]
         }
       ]
