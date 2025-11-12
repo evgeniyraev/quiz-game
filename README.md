@@ -82,3 +82,8 @@ src/
 - Plug the quiz window into real scoring logic or answer validation.
 - Persist imported questions or support multiple rows for future navigation.
 - Attach a USB drive that contains a folder with `settings.yaml` (or the `.galacticblackfriday` marker) and the app automatically imports it into the working directory, refreshing media and playlists on the fly.
+
+## Packaging & downloads
+
+- Build a Windows portable executable locally with `npm run build:win`. Artifacts are written to the `dist/` directory using `electron-builder`.
+- The GitHub Actions workflow `.github/workflows/build-windows.yml` runs on `workflow_dispatch` or tagged pushes (`v*`). It uploads the packaged app as an artifact and, for tags, attaches it to the GitHub release so it can be downloaded from the repository’s Releases page.

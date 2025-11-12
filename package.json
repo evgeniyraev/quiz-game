@@ -4,18 +4,44 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
+    "startEditing": "electron . -- --media-tab",
     "lint": "echo \"No lint step configured\"",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:win": "electron-builder --win portable"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "electron": "^39.1.2"
+    "electron": "^39.1.2",
+    "electron-builder": "^25.1.6"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
     "xlsx": "^0.18.5"
+  },
+  "build": {
+    "appId": "com.galacticblackfriday.app",
+    "productName": "GalacticBlackFriday",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "package.json",
+      "package-lock.json",
+      "src/**/*"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
   }
 }
