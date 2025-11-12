@@ -343,12 +343,12 @@ const broadcastSyncMessage = (message) => {
 
 const createConfigWindow = () => {
   configWindow = new BrowserWindow({
-    width: isDev ? 480 : 600,
-    height: isDev ? 720 : 800,
+    width: 600,
+    height: 800,
     show: false,
     resizable: isDev,
     movable: true,
-    fullscreen: !isDev,
+    fullscreen: false,
     title: "Question Config",
     webPreferences: {
       contextIsolation: true,
