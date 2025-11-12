@@ -14,6 +14,8 @@ const enableMediaTab =
 const SETTINGS_FILENAME = "settings.yaml";
 const PLAYLIST_DIRNAME = "afterhours";
 const EXPORT_MARKER = ".galacticblackfriday";
+const WORKBOOK_BASENAME = "quiz-latest";
+const WORKBOOK_EXTENSIONS = [".xlsx", ".xlsm", ".xlsb", ".xls"];
 
 const defaultSettings = () => ({
   workingDirectory: "",
@@ -71,9 +73,13 @@ let externalWatcherTimer = null;
 
 const createMainWindow = () => {
   mainWindow = new BrowserWindow({
-    width: 600,
-    height: 720,
-    resizable: false,
+    width: 1080,
+    height: 1920,
+    resizable: isDev,
+    fullscreen: !isDev,
+    fullscreenable: true,
+    simpleFullscreen: process.platform === "darwin" && !isDev,
+    autoHideMenuBar: true,
     title: "Quiz Console",
     webPreferences: {
       contextIsolation: true,
@@ -83,7 +89,14 @@ const createMainWindow = () => {
     },
   });
 
+  // Lock the viewport to portrait HD proportions so content stays consistent.
+  mainWindow.setAspectRatio(1080 / 1920);
+
   mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
+  if (!isDev) {
+    mainWindow.setMenuBarVisibility(false);
+    mainWindow.setFullScreen(true);
+  }
   // mainWindow.webContents.openDevTools({ mode: "detach" });
 };
 
@@ -468,6 +481,7 @@ const syncFromExternal = (externalDir) => {
     mergeSettings(importedSettings, { skipYamlWrite: true });
   }
 
+  loadWorkbookFromDirectory(workingDir);
   writeSettingsYaml();
   updateResolvedMedia();
   broadcastQuizUpdate();
@@ -834,6 +848,53 @@ const loadQuizFromExcelBuffer = (buffer, sourceName) => {
   loadQuizFromWorkbook(workbook, sourceName);
 };
 
+const findLatestWorkbookInDir = (dirPath) => {
+  if (!dirPath) return "";
+  try {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    const candidates = entries
+      .filter((entry) => entry.isFile())
+      .map((entry) => {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (
+          !entry.name.toLowerCase().startsWith(WORKBOOK_BASENAME) ||
+          !WORKBOOK_EXTENSIONS.includes(ext)
+        ) {
+          return null;
+        }
+
+        const resolvedPath = path.join(dirPath, entry.name);
+        const stat = fs.statSync(resolvedPath);
+        return {
+          path: resolvedPath,
+          mtime: stat.mtimeMs,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.mtime - a.mtime);
+
+    return candidates[0]?.path || "";
+  } catch (error) {
+    console.error("Unable to scan working directory for workbook:", error);
+    return "";
+  }
+};
+
+const loadWorkbookFromDirectory = (dirPath) => {
+  const workbookPath = findLatestWorkbookInDir(dirPath);
+  if (!workbookPath) {
+    return false;
+  }
+
+  try {
+    loadQuizFromExcelPath(workbookPath);
+    return true;
+  } catch (error) {
+    console.error("Failed to load workbook from working directory:", error);
+    return false;
+  }
+};
+
 const drawAward = () => {
   const eligibleAwards = quizState.awards.filter(
     (award) => award.remaining > 0 && award.probability > 0,
@@ -991,6 +1052,11 @@ ipcMain.handle("select-working-directory", async () => {
   let needsImport = true;
   if (existingSettings) {
     mergeSettings(existingSettings, { skipYamlWrite: true });
+    needsImport = false;
+  }
+
+  const workbookLoaded = loadWorkbookFromDirectory(selectedDir);
+  if (workbookLoaded) {
     needsImport = false;
   }
 
