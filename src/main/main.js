@@ -67,6 +67,12 @@ const createDefaultQuizState = () => ({
 
 let quizState = createDefaultQuizState();
 
+const getExportableSettings = (settings = quizState.settings) => {
+  if (!settings) return {};
+  const { workingDirectory, ...rest } = settings;
+  return rest;
+};
+
 let mainWindow;
 let configWindow;
 let externalWatcherTimer = null;
@@ -199,7 +205,8 @@ const writeSettingsYaml = () => {
   const settingsPath = getSettingsFilePath();
   if (!settingsPath) return;
   ensureDirExists(path.dirname(settingsPath));
-  fs.writeFileSync(settingsPath, yaml.dump(quizState.settings), "utf-8");
+  const exportable = getExportableSettings();
+  fs.writeFileSync(settingsPath, yaml.dump(exportable), "utf-8");
   const markerPath = path.join(path.dirname(settingsPath), EXPORT_MARKER);
   fs.writeFileSync(markerPath, "");
 };
@@ -446,7 +453,13 @@ const loadSettingsFromFile = (filePath) => {
     }
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const parsed = yaml.load(fileContent);
-    return typeof parsed === "object" ? parsed : null;
+    if (typeof parsed === "object" && parsed !== null) {
+      if ("workingDirectory" in parsed) {
+        delete parsed.workingDirectory;
+      }
+      return parsed;
+    }
+    return null;
   } catch (error) {
     console.error("Failed to read settings file:", error);
     return null;
@@ -1097,7 +1110,7 @@ ipcMain.handle("export-settings", async () => {
     return { success: false, message: "Export canceled" };
   }
 
-  const payload = yaml.dump(quizState.settings);
+  const payload = yaml.dump(getExportableSettings());
   fs.writeFileSync(result.filePath, payload, "utf-8");
   return { success: true };
 });
@@ -1118,6 +1131,9 @@ ipcMain.handle("import-settings", async () => {
   const imported = yaml.load(fileContent);
   if (!imported || typeof imported !== "object") {
     throw new Error("Invalid YAML format.");
+  }
+  if ("workingDirectory" in imported) {
+    delete imported.workingDirectory;
   }
 
   const destPath = path.join(workingDir, SETTINGS_FILENAME);
