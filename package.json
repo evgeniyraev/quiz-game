@@ -1,12 +1,13 @@
 {
   "name": "galacticblackfriday",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
     "startEditing": "electron . -- --media-tab",
     "lint": "echo \"No lint step configured\"",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "bump": "node scripts/bump-version.js",
     "build:win": "electron-builder --win portable",
     "build:mac": "electron-builder --mac dmg"
   },

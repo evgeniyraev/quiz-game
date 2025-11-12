@@ -384,10 +384,6 @@ const showConfigWindow = () => {
   ensureConfigWindow();
   if (!configWindow) return;
 
-  if (!isDev) {
-    configWindow.setFullScreen(true);
-  }
-
   configWindow.show();
   configWindow.focus();
 };
