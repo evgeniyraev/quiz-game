@@ -1,0 +1,21 @@
+workingDirectory: /Users/evgeniyraev/Developer/Labolatory/GalacticBlackFriday/working dirrectory
+workingHours:
+  start: '00:00'
+  end: '23:00'
+media:
+  pinVideo: ''
+  idleVideo: media/idleVideo-1762893756980.mp4
+  quizVideo: media/quizVideo-1762893736751.mp4
+  winVideo: media/winVideo-1762893768081.mp4
+  loseVideo: ''
+nonWorkingPlaylist:
+  - id: nonworking-1
+    file: afterhours/loop1.mp4
+    weight: 3
+  - id: nonworking-2
+    file: afterhours/loop2.mp4
+    weight: 2
+  - id: nonworking-3
+    file: afterhours/loop3.mp4
+    weight: 1
+nonWorkingEnabled: false

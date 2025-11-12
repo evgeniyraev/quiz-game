@@ -28,7 +28,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: GalacticBlackFriday-windows
-          path: dist/**/*
+          path: dist/**/*.exe
 
   release:
     needs: build
@@ -44,6 +44,6 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/**/*
+          files: dist/**/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
