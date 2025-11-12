@@ -1,120 +1,128 @@
-const dropZone = document.getElementById('drop-zone');
-const statusEl = document.getElementById('config-status');
-const previewQuestion = document.getElementById('preview-question');
-const previewAnswers = document.getElementById('preview-answers');
-const previewMeta = document.getElementById('preview-meta');
-const questionCount = document.getElementById('question-count');
-const awardList = document.getElementById('award-list');
-const playlistList = document.getElementById('playlist-list');
-const workingDirInput = document.getElementById('working-dir');
-const chooseDirBtn = document.getElementById('choose-dir-btn');
-const chooseDirCalloutBtn = document.getElementById('choose-dir-callout');
-const workingDirWarning = document.getElementById('working-dir-warning');
-const importWarning = document.getElementById('import-warning');
-const importSettingsCalloutBtn = document.getElementById('import-settings-callout');
-const workingStartInput = document.getElementById('working-start');
-const workingEndInput = document.getElementById('working-end');
-const idleVideoInput = document.getElementById('idle-video-input');
-const quizVideoInput = document.getElementById('quiz-video-input');
-const winVideoInput = document.getElementById('win-video-input');
-const loseVideoInput = document.getElementById('lose-video-input');
-const pinVideoInput = document.getElementById('pin-video-input');
-const saveSettingsBtn = document.getElementById('save-settings-btn');
-const saveSettingsBtnMedia = document.getElementById('save-settings-btn-media');
-const exportSettingsBtn = document.getElementById('export-settings-btn');
-const importSettingsBtn = document.getElementById('import-settings-btn');
-const resetSettingsBtn = document.getElementById('reset-settings-btn');
-const exportWorkingBtn = document.getElementById('export-working-btn');
-const playlistDropZone = document.getElementById('playlist-drop');
-const tabButtons = document.querySelectorAll('.tab-btn');
-const tabPanels = document.querySelectorAll('[data-tab-panel]');
-const mediaInputs = document.querySelectorAll('[data-media-key]');
+const dropZone = document.getElementById("drop-zone");
+const statusEl = document.getElementById("config-status");
+const previewQuestion = document.getElementById("preview-question");
+const previewAnswers = document.getElementById("preview-answers");
+const previewMeta = document.getElementById("preview-meta");
+const questionCount = document.getElementById("question-count");
+const awardList = document.getElementById("award-list");
+const playlistList = document.getElementById("playlist-list");
+const nonWorkingSection = document.getElementById("non-working");
+const workingDirInput = document.getElementById("working-dir");
+const chooseDirBtn = document.getElementById("choose-dir-btn");
+const chooseDirCalloutBtn = document.getElementById("choose-dir-callout");
+const workingDirWarning = document.getElementById("working-dir-warning");
+const importWarning = document.getElementById("import-warning");
+const importSettingsCalloutBtn = document.getElementById(
+  "import-settings-callout",
+);
+const workingStartInput = document.getElementById("working-start");
+const workingEndInput = document.getElementById("working-end");
+const idleVideoInput = document.getElementById("idle-video-input");
+const quizVideoInput = document.getElementById("quiz-video-input");
+const winVideoInput = document.getElementById("win-video-input");
+const loseVideoInput = document.getElementById("lose-video-input");
+const pinVideoInput = document.getElementById("pin-video-input");
+const saveSettingsBtn = document.getElementById("save-settings-btn");
+const saveSettingsBtnMedia = document.getElementById("save-settings-btn-media");
+const exportSettingsBtn = document.getElementById("export-settings-btn");
+const importSettingsBtn = document.getElementById("import-settings-btn");
+const resetSettingsBtn = document.getElementById("reset-settings-btn");
+const exportWorkingBtn = document.getElementById("export-working-btn");
+const playlistDropZone = document.getElementById("playlist-drop");
+const tabButtons = document.querySelectorAll(".tab-btn");
+const tabPanels = document.querySelectorAll("[data-tab-panel]");
+const mediaTabButton = document.getElementById("media-tab-btn");
+const mediaTabPanel = document.getElementById("media-tab-panel");
+const mediaInputs = document.querySelectorAll("[data-media-key]");
 
 const defaultSettings = {
-  workingDirectory: '',
-  workingHours: { start: '09:00', end: '21:00' },
+  workingDirectory: "",
+  workingHours: { start: "09:00", end: "21:00" },
   media: {
-    idleVideo: '',
-    quizVideo: '',
-    winVideo: '',
-    loseVideo: '',
+    idleVideo: "",
+    quizVideo: "",
+    winVideo: "",
+    loseVideo: "",
   },
   nonWorkingPlaylist: [],
+  nonWorkingEnabled: false,
 };
 
 const cloneSettings = (settings) =>
-  typeof structuredClone === 'function'
+  typeof structuredClone === "function"
     ? structuredClone(settings)
     : JSON.parse(JSON.stringify(settings));
 
 let settingsState = cloneSettings(defaultSettings);
 let needsConfigImport = false;
 let quizSnapshot = null;
+let mediaTabEnabled = false;
 
-const setStatus = (message, tone = 'info') => {
-  statusEl.textContent = message || '';
+const setStatus = (message, tone = "info") => {
+  statusEl.textContent = message || "";
   statusEl.style.color =
-    tone === 'error' ? '#ff8585' : tone === 'success' ? '#8ff5c1' : '#f6c177';
+    tone === "error" ? "#ff8585" : tone === "success" ? "#8ff5c1" : "#f6c177";
 };
 
 const describeQuestions = (questions = []) => {
   const count = questions.length;
-  if (!count) return '0 questions';
-  return `${count} question${count === 1 ? '' : 's'}`;
+  if (!count) return "0 questions";
+  return `${count} question${count === 1 ? "" : "s"}`;
 };
 
 const setActiveTab = (target) => {
   tabButtons.forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.tabTarget === target);
+    btn.classList.toggle("active", btn.dataset.tabTarget === target);
   });
   tabPanels.forEach((panel) => {
-    panel.classList.toggle('hidden', panel.dataset.tabPanel !== target);
+    panel.classList.toggle("hidden", panel.dataset.tabPanel !== target);
   });
 };
 
 const setPreviewQuestion = (question) => {
   if (!question) {
-    previewQuestion.textContent = 'No question configured.';
-    previewAnswers.innerHTML = '';
+    previewQuestion.textContent = "No question configured.";
+    previewAnswers.innerHTML = "";
     return;
   }
 
-  previewQuestion.textContent = question.question || 'Question';
-  previewAnswers.innerHTML = '';
+  previewQuestion.textContent = question.question || "Question";
+  previewAnswers.innerHTML = "";
 
   (question.answers || []).forEach(({ label, text }) => {
-    const li = document.createElement('li');
+    const li = document.createElement("li");
     const isCorrect = question.correctAnswer === label;
-    li.textContent = `${label}: ${text || '—'}`;
+    li.textContent = `${label}: ${text || "—"}`;
     if (isCorrect) {
-      li.classList.add('correct-answer');
+      li.classList.add("correct-answer");
     }
     previewAnswers.appendChild(li);
   });
 };
 
 const renderAwards = (awards = []) => {
-  awardList.innerHTML = '';
+  awardList.innerHTML = "";
 
   if (!awards.length) {
-    const li = document.createElement('li');
-    li.textContent = 'No awards configured.';
+    const li = document.createElement("li");
+    li.textContent = "No awards configured.";
     awardList.appendChild(li);
     return;
   }
 
   awards.forEach((award) => {
-    const li = document.createElement('li');
-    const label = document.createElement('span');
-    const remaining = document.createElement('span');
+    const li = document.createElement("li");
+    const label = document.createElement("span");
+    const remaining = document.createElement("span");
 
     label.textContent = award.name;
-    label.className = 'label';
+    label.className = "label";
 
     const remainingText =
-      typeof award.remaining === 'number' && typeof award.initialCount === 'number'
+      typeof award.remaining === "number" &&
+      typeof award.initialCount === "number"
         ? `${award.remaining}/${award.initialCount} left`
-        : `${award.remaining ?? '?'} remaining`;
+        : `${award.remaining ?? "?"} remaining`;
 
     remaining.textContent = `${remainingText} • weight ${award.probability}`;
 
@@ -125,20 +133,20 @@ const renderAwards = (awards = []) => {
 };
 
 const renderPlaylist = (playlist = []) => {
-  playlistList.innerHTML = '';
+  playlistList.innerHTML = "";
 
   if (!playlist.length) {
-    const li = document.createElement('li');
-    li.textContent = 'No after-hours playlist configured.';
+    const li = document.createElement("li");
+    li.textContent = "No after-hours playlist configured.";
     playlistList.appendChild(li);
     return;
   }
 
   playlist.forEach((entry) => {
-    const li = document.createElement('li');
-    const label = document.createElement('span');
-    const weight = document.createElement('span');
-    label.textContent = entry.file || '—';
+    const li = document.createElement("li");
+    const label = document.createElement("span");
+    const weight = document.createElement("span");
+    label.textContent = entry.file || "—";
     weight.textContent = `Weight: ${entry.weight}`;
     li.appendChild(label);
     li.appendChild(weight);
@@ -156,16 +164,21 @@ const renderPreview = (quiz) => {
   renderAwards(quiz.awards);
 
   if (quiz.metadata?.updatedAt) {
-    previewMeta.textContent = `${quiz.metadata.source || 'Unknown'} • Updated ${new Date(
+    previewMeta.textContent = `${quiz.metadata.source || "Unknown"} • Updated ${new Date(
       quiz.metadata.updatedAt,
     ).toLocaleString()}`;
   } else {
-    previewMeta.textContent = '';
+    previewMeta.textContent = "";
   }
 };
 
 const setControlsEnabled = (enabled) => {
-  const buttons = [saveSettingsBtn, exportSettingsBtn, importSettingsBtn];
+  const buttons = [
+    saveSettingsBtn,
+    exportSettingsBtn,
+    importSettingsBtn,
+    saveSettingsBtnMedia,
+  ];
   buttons.forEach((btn) => {
     if (btn) btn.disabled = !enabled;
   });
@@ -177,12 +190,18 @@ const setControlsEnabled = (enabled) => {
 const updateWorkingDirWarnings = () => {
   const hasDir = Boolean(settingsState.workingDirectory);
   if (workingDirWarning) {
-    workingDirWarning.classList.toggle('hidden', hasDir);
+    workingDirWarning.classList.toggle("hidden", hasDir);
   }
   if (importWarning) {
-    importWarning.classList.toggle('hidden', !(hasDir && needsConfigImport));
+    importWarning.classList.toggle("hidden", !(hasDir && needsConfigImport));
   }
   setControlsEnabled(hasDir);
+};
+
+const updateNonWorkingVisibility = () => {
+  if (!nonWorkingSection) return;
+  const visible = Boolean(settingsState.nonWorkingEnabled);
+  nonWorkingSection.classList.toggle("hidden", !visible);
 };
 
 const applySettingsToForm = (settings = defaultSettings) => {
@@ -198,13 +217,18 @@ const applySettingsToForm = (settings = defaultSettings) => {
       ...(settings.media || {}),
     },
     nonWorkingPlaylist: settings.nonWorkingPlaylist || [],
+    nonWorkingEnabled:
+      typeof settings.nonWorkingEnabled === "boolean"
+        ? settings.nonWorkingEnabled
+        : Boolean(settings.nonWorkingPlaylist?.length),
   };
 
   if (workingDirInput) {
-    workingDirInput.value = settingsState.workingDirectory || '';
+    workingDirInput.value = settingsState.workingDirectory || "";
   }
 
-  if (workingStartInput) workingStartInput.value = settingsState.workingHours.start;
+  if (workingStartInput)
+    workingStartInput.value = settingsState.workingHours.start;
   if (workingEndInput) workingEndInput.value = settingsState.workingHours.end;
   if (idleVideoInput) idleVideoInput.value = settingsState.media.idleVideo;
   if (quizVideoInput) quizVideoInput.value = settingsState.media.quizVideo;
@@ -213,6 +237,7 @@ const applySettingsToForm = (settings = defaultSettings) => {
   if (pinVideoInput) pinVideoInput.value = settingsState.media.pinVideo;
   renderPlaylist(settingsState.nonWorkingPlaylist);
   updateWorkingDirWarnings();
+  updateNonWorkingVisibility();
 };
 
 const renderQuizData = (quiz) => {
@@ -221,6 +246,24 @@ const renderQuizData = (quiz) => {
   renderPreview(quiz);
   applySettingsToForm(quiz.settings);
   needsConfigImport = false;
+};
+
+const applyFeatureFlags = (flags = {}) => {
+  mediaTabEnabled = Boolean(flags.enableMediaTab);
+  if (!mediaTabEnabled) {
+    mediaTabButton?.classList.add('hidden');
+    mediaTabPanel?.classList.add('hidden');
+    if (mediaTabButton?.classList.contains('active')) {
+      setActiveTab('setup');
+    }
+  } else {
+    mediaTabButton?.classList.remove('hidden');
+    mediaTabPanel?.classList.remove('hidden');
+    if (!document.querySelector('.tab-btn.active')) {
+      setActiveTab('setup');
+    }
+    setupMediaInputs();
+  }
 };
 
 const buildPayload = async (file) => {
@@ -236,8 +279,13 @@ const handleFileList = async (files) => {
   if (!files?.length) return;
   const file = files[0];
 
-  if (!file.name.endsWith('.xlsx')) {
-    setStatus('Only .xlsx files are supported.', 'error');
+  if (!settingsState.workingDirectory) {
+    setStatus("Please select a working directory before importing.", "error");
+    return;
+  }
+
+  if (!file.name.endsWith(".xlsx")) {
+    setStatus("Only .xlsx files are supported.", "error");
     return;
   }
 
@@ -247,42 +295,42 @@ const handleFileList = async (files) => {
   const result = await window.configAPI.importExcel(payload);
 
   if (!result.success) {
-    setStatus(result.message || 'Unable to import file.', 'error');
+    setStatus(result.message || "Unable to import file.", "error");
     return;
   }
 
-  setStatus(`Loaded ${file.name}`, 'success');
+  setStatus(`Loaded ${file.name}`, "success");
   renderQuizData(result.quiz);
 };
 
-['dragenter', 'dragover'].forEach((eventName) => {
+["dragenter", "dragover"].forEach((eventName) => {
   dropZone.addEventListener(eventName, (event) => {
     event.preventDefault();
     if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'copy';
+      event.dataTransfer.dropEffect = "copy";
     }
-    dropZone.classList.add('active');
+    dropZone.classList.add("active");
   });
 });
 
-['dragleave', 'drop'].forEach((eventName) => {
+["dragleave", "drop"].forEach((eventName) => {
   dropZone.addEventListener(eventName, (event) => {
     event.preventDefault();
-    dropZone.classList.remove('active');
+    dropZone.classList.remove("active");
   });
 });
 
-dropZone.addEventListener('drop', (event) => {
+dropZone.addEventListener("drop", (event) => {
   const files = event.dataTransfer?.files;
   handleFileList(files);
 });
 
-dropZone.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' || event.key === ' ') {
+dropZone.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.xlsx';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xlsx";
     input.onchange = () => handleFileList(input.files);
     input.click();
   }
@@ -290,10 +338,11 @@ dropZone.addEventListener('keydown', (event) => {
 
 window.configAPI.requestQuiz().then(renderQuizData);
 window.configAPI.onQuizUpdated(renderQuizData);
-window.configAPI.onSyncMessage((message) => setStatus(message, 'success'));
+window.configAPI.onSyncMessage((message) => setStatus(message, "success"));
+window.configAPI.getFlags?.().then(applyFeatureFlags);
 
-window.addEventListener('dragover', (event) => event.preventDefault());
-window.addEventListener('drop', (event) => event.preventDefault());
+window.addEventListener("dragover", (event) => event.preventDefault());
+window.addEventListener("drop", (event) => event.preventDefault());
 
 const collectSettingsFromForm = () => ({
   workingHours: {
@@ -301,11 +350,11 @@ const collectSettingsFromForm = () => ({
     end: workingEndInput?.value || defaultSettings.workingHours.end,
   },
   media: {
-    pinVideo: pinVideoInput?.value.trim() || '',
-    idleVideo: idleVideoInput?.value.trim() || '',
-    quizVideo: quizVideoInput?.value.trim() || '',
-    winVideo: winVideoInput?.value.trim() || '',
-    loseVideo: loseVideoInput?.value.trim() || '',
+    pinVideo: pinVideoInput?.value.trim() || "",
+    idleVideo: idleVideoInput?.value.trim() || "",
+    quizVideo: quizVideoInput?.value.trim() || "",
+    winVideo: winVideoInput?.value.trim() || "",
+    loseVideo: loseVideoInput?.value.trim() || "",
   },
 });
 
@@ -325,19 +374,21 @@ const handleMediaIngest = async (key, file) => {
 
   const result = await window.configAPI.ingestMedia(payload);
   if (!result.success) {
-    setStatus(result.message || 'Unable to ingest media.', 'error');
+    setStatus(result.message || "Unable to ingest media.", "error");
     return;
   }
 
   const input = document.querySelector(`[data-media-key="${key}"]`);
   if (input) {
-    input.value = result.relativePath || '';
+    input.value = result.relativePath || "";
   }
 
-  settingsState.media[key] = result.relativePath || '';
-  const saveResult = await window.configAPI.saveSettings({ media: { [key]: result.relativePath || '' } });
+  settingsState.media[key] = result.relativePath || "";
+  const saveResult = await window.configAPI.saveSettings({
+    media: { [key]: result.relativePath || "" },
+  });
   if (!saveResult.success) {
-    setStatus(saveResult.message || 'Unable to save media settings.', 'error');
+    setStatus(saveResult.message || "Unable to save media settings.", "error");
     return;
   }
 
@@ -345,7 +396,7 @@ const handleMediaIngest = async (key, file) => {
     applySettingsToForm(saveResult.settings);
   }
 
-  setStatus('Media updated.', 'success');
+  setStatus("Media updated.", "success");
 };
 
 const setupMediaInputs = () => {
@@ -353,21 +404,21 @@ const setupMediaInputs = () => {
     const key = input.dataset.mediaKey;
     if (!key) return;
 
-    ['dragenter', 'dragover'].forEach((eventName) => {
+    ["dragenter", "dragover"].forEach((eventName) => {
       input.addEventListener(eventName, (event) => {
         event.preventDefault();
-        input.classList.add('drag-active');
+        input.classList.add("drag-active");
       });
     });
 
-    ['dragleave', 'drop'].forEach((eventName) => {
+    ["dragleave", "drop"].forEach((eventName) => {
       input.addEventListener(eventName, (event) => {
         event.preventDefault();
-        input.classList.remove('drag-active');
+        input.classList.remove("drag-active");
       });
     });
 
-    input.addEventListener('drop', (event) => {
+    input.addEventListener("drop", (event) => {
       const file = event.dataTransfer?.files?.[0];
       handleMediaIngest(key, file);
     });
@@ -386,44 +437,44 @@ const handlePlaylistDrop = async (file) => {
 
   const result = await window.configAPI.ingestAfterhours(payload);
   if (!result.success) {
-    setStatus(result.message || 'Unable to ingest playlist media.', 'error');
+    setStatus(result.message || "Unable to ingest playlist media.", "error");
     return;
   }
 
-  setStatus('Added to non-working playlist.', 'success');
+  setStatus("Added to non-working playlist.", "success");
   window.configAPI.requestQuiz().then(renderQuizData);
 };
 
-saveSettingsBtn?.addEventListener('click', async () => {
+saveSettingsBtn?.addEventListener("click", async () => {
   const payload = collectSettingsFromForm();
   const result = await window.configAPI.saveSettings(payload);
   if (!result.success) {
-    setStatus(result.message || 'Unable to save settings.', 'error');
+    setStatus(result.message || "Unable to save settings.", "error");
     return;
   }
   if (result.settings) {
     applySettingsToForm(result.settings);
   }
-  setStatus('Settings saved.', 'success');
+  setStatus("Settings saved.", "success");
 });
 
-saveSettingsBtnMedia?.addEventListener('click', async () => {
+saveSettingsBtnMedia?.addEventListener("click", async () => {
   const payload = collectSettingsFromForm();
   const result = await window.configAPI.saveSettings(payload);
   if (!result.success) {
-    setStatus(result.message || 'Unable to save settings.', 'error');
+    setStatus(result.message || "Unable to save settings.", "error");
     return;
   }
   if (result.settings) {
     applySettingsToForm(result.settings);
   }
-  setStatus('Media settings saved.', 'success');
+  setStatus("Media settings saved.", "success");
 });
 
 const handleChooseDirectory = async () => {
   const result = await window.configAPI.selectWorkingDirectory();
   if (!result.success) {
-    setStatus(result.message || 'No directory selected.', 'error');
+    setStatus(result.message || "No directory selected.", "error");
     return;
   }
 
@@ -439,38 +490,38 @@ const handleChooseDirectory = async () => {
     quizSnapshot = { ...quizSnapshot, settings: mergedSettings };
   }
   updateWorkingDirWarnings();
-  setActiveTab(needsConfigImport ? 'setup' : 'media');
-  setStatus('Working directory updated.', 'success');
+  setActiveTab(needsConfigImport ? "setup" : "media");
+  setStatus("Working directory updated.", "success");
 };
 
-chooseDirBtn?.addEventListener('click', handleChooseDirectory);
+chooseDirBtn?.addEventListener("click", handleChooseDirectory);
 
-exportSettingsBtn?.addEventListener('click', async () => {
+exportSettingsBtn?.addEventListener("click", async () => {
   const result = await window.configAPI.exportSettings();
   if (!result.success) {
-    setStatus(result.message || 'Export canceled.', 'error');
+    setStatus(result.message || "Export canceled.", "error");
     return;
   }
-  setStatus('Settings exported.', 'success');
+  setStatus("Settings exported.", "success");
 });
 
-exportWorkingBtn?.addEventListener('click', async () => {
+exportWorkingBtn?.addEventListener("click", async () => {
   const result = await window.configAPI.exportWorkingDirectory();
   if (!result.success) {
-    setStatus(result.message || 'Working directory export canceled.', 'error');
+    setStatus(result.message || "Working directory export canceled.", "error");
     return;
   }
-  setStatus(`Exported working directory to ${result.path}`, 'success');
+  setStatus(`Exported working directory to ${result.path}`, "success");
 });
 
 const handleImportSettings = async () => {
   const result = await window.configAPI.importSettingsFile();
   if (!result.success) {
-    setStatus(result.message || 'Import canceled.', 'error');
+    setStatus(result.message || "Import canceled.", "error");
     return;
   }
   needsConfigImport = false;
-  setStatus('Settings imported.', 'success');
+  setStatus("Settings imported.", "success");
   if (result.settings) {
     applySettingsToForm(result.settings);
     if (quizSnapshot) {
@@ -480,63 +531,64 @@ const handleImportSettings = async () => {
   }
 };
 
-importSettingsBtn?.addEventListener('click', handleImportSettings);
-
-setupMediaInputs();
+importSettingsBtn?.addEventListener("click", handleImportSettings);
 
 if (playlistDropZone) {
-  ['dragenter', 'dragover'].forEach((eventName) => {
+  ["dragenter", "dragover"].forEach((eventName) => {
     playlistDropZone.addEventListener(eventName, (event) => {
       event.preventDefault();
-      playlistDropZone.classList.add('active');
+      playlistDropZone.classList.add("active");
     });
   });
 
-  ['dragleave', 'drop'].forEach((eventName) => {
+  ["dragleave", "drop"].forEach((eventName) => {
     playlistDropZone.addEventListener(eventName, (event) => {
       event.preventDefault();
-      playlistDropZone.classList.remove('active');
+      playlistDropZone.classList.remove("active");
     });
   });
 
-  playlistDropZone.addEventListener('drop', (event) => {
+  playlistDropZone.addEventListener("drop", (event) => {
     const file = event.dataTransfer?.files?.[0];
     handlePlaylistDrop(file);
   });
 
-  playlistDropZone.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'video/*';
+  playlistDropZone.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "video/*";
       input.onchange = () => handlePlaylistDrop(input.files?.[0]);
       input.click();
     }
   });
 }
 tabButtons.forEach((btn) => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener("click", () => {
     const target = btn.dataset.tabTarget;
-    if (!settingsState.workingDirectory && target !== 'setup') {
-      setStatus('Please select a working directory first.', 'error');
+    if (!settingsState.workingDirectory && target !== "setup") {
+      setStatus("Please select a working directory first.", "error");
       return;
     }
     setActiveTab(target);
   });
 });
 
-chooseDirCalloutBtn?.addEventListener('click', handleChooseDirectory);
-importSettingsCalloutBtn?.addEventListener('click', handleImportSettings);
-resetSettingsBtn?.addEventListener('click', async () => {
+chooseDirCalloutBtn?.addEventListener("click", handleChooseDirectory);
+importSettingsCalloutBtn?.addEventListener("click", handleImportSettings);
+resetSettingsBtn?.addEventListener("click", async () => {
   const confirmed = window.confirm(
-    'This will erase all settings and cached quiz data. Continue?',
+    "This will erase all settings and cached quiz data. Continue?",
   );
   if (!confirmed) return;
   const result = await window.configAPI.resetSettings();
   if (!result.success) {
-    setStatus(result.message || 'Unable to reset settings.', 'error');
+    setStatus(result.message || "Unable to reset settings.", "error");
     return;
   }
-  setStatus('Settings reset. Please configure working directory again.', 'success');
+  setStatus(
+    "Settings reset. Please configure working directory again.",
+    "success",
+  );
   window.configAPI.requestQuiz().then(renderQuizData);
 });

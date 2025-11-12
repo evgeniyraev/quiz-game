@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('configAPI', {
   importExcel: (payload) => ipcRenderer.invoke('process-excel', payload),
   requestQuiz: () => ipcRenderer.invoke('get-quiz'),
+  getFlags: () => ipcRenderer.invoke('get-flags'),
   selectWorkingDirectory: () => ipcRenderer.invoke('select-working-directory'),
   saveSettings: (payload) => ipcRenderer.invoke('update-settings', payload),
   exportSettings: () => ipcRenderer.invoke('export-settings'),

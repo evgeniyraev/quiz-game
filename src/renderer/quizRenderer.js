@@ -24,9 +24,8 @@ const HOTSPOT_HOLD_MS = 5000;
 
 let unlocked = false;
 let quizData = null;
-let currentIndex = 0;
+let currentQuestionIndex = null;
 let selectedAnswer = null;
-let advanceTimer = null;
 let hotspotTimer = null;
 let nonWorkingIndex = -1;
 let nonWorkingActive = false;
@@ -35,6 +34,11 @@ let currentMode = "idle";
 
 const hasQuestions = () => Boolean(quizData?.questions?.length);
 
+const pickRandomQuestionIndex = () => {
+  if (!quizData?.questions?.length) return null;
+  return Math.floor(Math.random() * quizData.questions.length);
+};
+
 const hideAwardSection = () => {
   awardSection.classList.add("hidden");
   questionSection.classList.remove("hidden");
@@ -42,15 +46,9 @@ const hideAwardSection = () => {
   questionSection.classList.remove("correct-state", "incorrect-state");
 };
 
-const clearAdvanceTimer = () => {
-  if (advanceTimer) {
-    clearTimeout(advanceTimer);
-    advanceTimer = null;
-  }
-};
-
 const updateAnswerOptionClasses = (reveal = false) => {
-  const question = quizData?.questions?.[currentIndex];
+  const question =
+    quizData?.questions?.[currentQuestionIndex ?? 0];
   if (!question) return;
 
   answerList.querySelectorAll(".answer-option").forEach((option) => {
@@ -197,7 +195,6 @@ const resetForNextPlayer = ({ message, showPin } = {}) => {
   unlocked = false;
   pinInput.value = "";
   selectedAnswer = null;
-  clearAdvanceTimer();
   pinError.textContent = message || "";
 
   if (isClosed || !showPin) {
@@ -435,7 +432,6 @@ const startClosedPlaylist = () => {
 setInterval(updateWorkingHoursStatus, 30000);
 
 const renderQuestion = () => {
-  clearAdvanceTimer();
   questionSection.classList.remove("correct-state", "incorrect-state");
   if (!hasQuestions()) {
     questionText.textContent =
@@ -447,9 +443,13 @@ const renderQuestion = () => {
   }
 
   updateConfigWarning();
-  const question = quizData.questions[currentIndex];
+  if (currentQuestionIndex === null) {
+    currentQuestionIndex = pickRandomQuestionIndex();
+  }
+
+  const question = quizData.questions[currentQuestionIndex];
   questionText.textContent = question?.question || "Question";
-  questionProgress.textContent = `Question ${currentIndex + 1} of ${quizData.questions.length}`;
+  questionProgress.textContent = "Question";
   questionError.textContent = "";
   answerList.innerHTML = "";
   selectedAnswer = null;
@@ -484,9 +484,9 @@ const resetQuizFlow = (quiz, { resetIndex = true } = {}) => {
   quizData = quiz;
 
   if (!quizData?.questions?.length) {
-    currentIndex = 0;
-  } else if (resetIndex || currentIndex >= quizData.questions.length) {
-    currentIndex = 0;
+    currentQuestionIndex = null;
+  } else if (resetIndex || currentQuestionIndex === null) {
+    currentQuestionIndex = pickRandomQuestionIndex();
   }
 
   hideAwardSection();
@@ -521,31 +521,17 @@ const revealSelection = () => {
   questionError.textContent = "";
 };
 
-const autoAdvance = () => {
-  advanceTimer = setTimeout(() => {
-    advanceTimer = null;
-
-    if (currentIndex < quizData.questions.length - 1) {
-      currentIndex += 1;
-      renderQuestion();
-    } else {
-      handleAwardReveal();
-    }
-  }, 800);
-};
-
 const selectAnswer = (answerKey) => {
   if (!hasQuestions()) return;
   selectedAnswer = answerKey;
   revealSelection();
 
-  const question = quizData.questions[currentIndex];
+  const question = quizData.questions[currentQuestionIndex ?? 0];
   const isCorrect = question.correctAnswer === answerKey;
 
   if (isCorrect) {
     questionSection.classList.add("correct-state");
-    setMode("quiz");
-    autoAdvance();
+    handleAwardReveal();
   } else {
     questionSection.classList.add("incorrect-state");
     questionError.textContent = "Incorrect answer. Please re-enter PIN.";
@@ -610,7 +596,7 @@ window.quizAPI.onQuizUpdated((quiz) => {
     return;
   }
 
-  currentIndex = 0;
+  currentQuestionIndex = pickRandomQuestionIndex();
   renderQuestion();
 });
 
@@ -618,6 +604,7 @@ window.quizAPI.requestQuiz().then((quiz) => {
   quizData = quiz;
   updateConfigWarning();
   updateWorkingHoursStatus();
+  currentQuestionIndex = pickRandomQuestionIndex();
   if (!isClosed) {
     showIdleScreen();
   }

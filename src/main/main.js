@@ -8,6 +8,8 @@ const XLSX = require("xlsx");
 
 const PIN_CODE = process.env.APP_PIN || "4242";
 const isDev = !app.isPackaged;
+const enableMediaTab =
+  process.argv.includes("--media-tab") || process.env.ENABLE_MEDIA_TAB === "1";
 
 const SETTINGS_FILENAME = "settings.yaml";
 const PLAYLIST_DIRNAME = "afterhours";
@@ -27,6 +29,7 @@ const defaultSettings = () => ({
     loseVideo: "",
   },
   nonWorkingPlaylist: [],
+  nonWorkingEnabled: false,
 });
 
 const createDefaultQuizState = () => ({
@@ -137,6 +140,10 @@ const mergeSettings = (patch = {}, options = {}) => {
       ...quizState.settings.media,
       ...(patch.media || {}),
     },
+    nonWorkingEnabled:
+      typeof patch.nonWorkingEnabled === "boolean"
+        ? patch.nonWorkingEnabled
+        : quizState.settings.nonWorkingEnabled,
   };
 
   if (patch.nonWorkingPlaylist) {
@@ -214,6 +221,30 @@ const copyDirectoryContents = (source, destination) => {
   });
 };
 
+const saveWorkbookArtifact = (
+  sourcePath,
+  buffer,
+  originalName = "quiz.xlsx",
+) => {
+  const workingDir = requireWorkingDirectory();
+  ensureDirExists(workingDir);
+  const extension = path.extname(originalName) || ".xlsx";
+  const destination = path.join(workingDir, `quiz-latest${extension}`);
+  if (sourcePath) {
+    fs.copyFileSync(sourcePath, destination);
+  } else if (buffer) {
+    fs.writeFileSync(
+      destination,
+      Buffer.isBuffer(buffer)
+        ? buffer
+        : Buffer.from(
+            buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer,
+          ),
+    );
+  }
+  quizState.metadata.workbookFile = path.basename(destination);
+};
+
 const getMountRoots = () => {
   const platform = os.platform();
   if (platform === "win32") {
@@ -273,14 +304,10 @@ const findExternalConfigDirs = () => {
       candidates = [];
     }
 
-    console.log("candidates", candidates);
-
     candidates.forEach((candidate) => {
       try {
         const resolved = path.resolve(candidate);
-        console.log("resolved", resolved);
         if (resolved === workingDir) return;
-        console.log("is not working dir", resolved);
         const settingsPath = path.join(candidate, SETTINGS_FILENAME);
         const markerPath = path.join(candidate, EXPORT_MARKER);
         if (fs.existsSync(settingsPath) || fs.existsSync(markerPath)) {
@@ -469,14 +496,10 @@ const syncToExternal = (destinationDir) => {
 const externalImportCache = new Map();
 
 const scanExternalImports = () => {
-  console.log("scanning");
   const workingDir = getWorkingDirectory();
   if (!workingDir) return;
 
-  console.log("there is a workdir");
-
   const sources = findExternalConfigDirs();
-  console.log("sources", sources);
   sources.forEach((source) => {
     try {
       const marker = fs.existsSync(path.join(source, SETTINGS_FILENAME))
@@ -500,7 +523,6 @@ const scanExternalImports = () => {
 };
 
 const startExternalWatcher = () => {
-  console.log("here");
   if (externalWatcherTimer) return;
   externalWatcherTimer = setInterval(scanExternalImports, 20000);
 };
@@ -582,7 +604,7 @@ const buildAnswers = (row) => {
 };
 
 const parseQuestionRows = (rows) => {
-  return rows
+  const parsed = rows
     .map((row, index) => {
       const question =
         row.Question ||
@@ -643,6 +665,16 @@ const parseQuestionRows = (rows) => {
       };
     })
     .filter(Boolean);
+
+  if (parsed.length > 1) {
+    const randomIndex = Math.floor(Math.random() * parsed.length);
+    [parsed[parsed.length - 1], parsed[randomIndex]] = [
+      parsed[randomIndex],
+      parsed[parsed.length - 1],
+    ];
+  }
+
+  return parsed;
 };
 
 const sanitizeNumber = (value, fallback = 0) => {
@@ -779,7 +811,12 @@ const loadQuizFromWorkbook = (workbook, sourceName) => {
       workbook.Sheets[playlistSheetName],
       { defval: "" },
     );
-    quizState.settings.nonWorkingPlaylist = parseNonWorkingRows(playlistRows);
+    const parsedPlaylist = parseNonWorkingRows(playlistRows);
+    quizState.settings.nonWorkingPlaylist = parsedPlaylist;
+    quizState.settings.nonWorkingEnabled = parsedPlaylist.length > 0;
+  } else {
+    quizState.settings.nonWorkingPlaylist = [];
+    quizState.settings.nonWorkingEnabled = false;
   }
 
   persistQuizState();
@@ -845,7 +882,6 @@ app.whenReady().then(() => {
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      console.log("creating window");
       createMainWindow();
       createConfigWindow();
     }
@@ -876,6 +912,7 @@ ipcMain.handle("get-quiz", () => quizState);
 
 ipcMain.handle("process-excel", (_event, payload = {}) => {
   try {
+    const workingDir = requireWorkingDirectory();
     const { path: filePath, buffer, name } = payload;
 
     if (!filePath && !buffer) {
@@ -884,6 +921,7 @@ ipcMain.handle("process-excel", (_event, payload = {}) => {
 
     if (filePath) {
       loadQuizFromExcelPath(filePath);
+      saveWorkbookArtifact(filePath, null, name || path.basename(filePath));
     } else {
       const normalizedBuffer = Buffer.isBuffer(buffer)
         ? buffer
@@ -891,6 +929,7 @@ ipcMain.handle("process-excel", (_event, payload = {}) => {
             buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer,
           );
       loadQuizFromExcelBuffer(normalizedBuffer, name);
+      saveWorkbookArtifact(null, normalizedBuffer, name || "quiz.xlsx");
     }
 
     broadcastQuizUpdate();
@@ -906,6 +945,11 @@ ipcMain.handle("process-excel", (_event, payload = {}) => {
     };
   }
 });
+
+ipcMain.handle("get-flags", () => ({
+  success: true,
+  enableMediaTab,
+}));
 
 ipcMain.handle("draw-award", () => {
   try {
@@ -1120,6 +1164,7 @@ ipcMain.handle("ingest-afterhours", async (_event, payload = {}) => {
         weight: Number(weight) || 1,
       },
     ];
+    quizState.settings.nonWorkingEnabled = true;
 
     persistQuizState();
     updateResolvedMedia();
