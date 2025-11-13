@@ -1,67 +1,118 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quiz Console</title>
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body class="quiz">
-    <div class="screen">
-      <div class="video-stage">
-        <video id="state-video" playsinline></video>
-        <img id="state-image" alt="" />
-      </div>
-      <main class="card overlay">
-        <section id="pin-section">
-          <h1>Enter PIN</h1>
-          <form id="pin-form">
-            <label class="sr-only" for="pin-input">PIN</label>
-            <input id="pin-input" type="password" maxlength="10" placeholder="****" autofocus readonly />
-            <button type="submit">Unlock</button>
-          </form>
-          <div id="pin-keypad" class="keypad">
-            <button type="button" data-key="1">1</button>
-            <button type="button" data-key="2">2</button>
-            <button type="button" data-key="3">3</button>
-            <button type="button" data-key="4">4</button>
-            <button type="button" data-key="5">5</button>
-            <button type="button" data-key="6">6</button>
-            <button type="button" data-key="7">7</button>
-            <button type="button" data-key="8">8</button>
-            <button type="button" data-key="9">9</button>
-            <button type="button" data-key="clear" class="small">Clear</button>
-            <button type="button" data-key="0">0</button>
-            <button type="button" data-key="del" aria-label="Delete">⌫</button>
-            <button type="button" data-key="enter" class="wide">Enter</button>
-          </div>
-          <p id="pin-error" role="alert"></p>
-        </section>
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Quiz Console</title>
+        <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body class="quiz">
+        <div class="screen">
+            <div class="video-stage">
+                <video id="state-video" playsinline></video>
+                <img id="state-image" alt="" />
+            </div>
+            <main class="card overlay">
+                <section id="pin-section" class="pin-screen">
+                    <p class="pin-instruction">Въведи своята парола</p>
+                    <form id="pin-form" autocomplete="off">
+                        <label class="sr-only" for="pin-input">PIN</label>
+                        <input
+                            id="pin-input"
+                            type="password"
+                            maxlength="6"
+                            readonly
+                            autocomplete="off"
+                            inputmode="numeric"
+                            class="sr-only"
+                        />
+                        <div id="pin-display" aria-hidden="true"></div>
+                    </form>
+                    <div id="pin-keypad" class="keypad pin-keypad">
+                        <button type="button" data-key="1" class="pin-key">
+                            1
+                        </button>
+                        <button type="button" data-key="2" class="pin-key">
+                            2
+                        </button>
+                        <button type="button" data-key="3" class="pin-key">
+                            3
+                        </button>
+                        <button type="button" data-key="4" class="pin-key">
+                            4
+                        </button>
+                        <button type="button" data-key="5" class="pin-key">
+                            5
+                        </button>
+                        <button type="button" data-key="6" class="pin-key">
+                            6
+                        </button>
+                        <button type="button" data-key="7" class="pin-key">
+                            7
+                        </button>
+                        <button type="button" data-key="8" class="pin-key">
+                            8
+                        </button>
+                        <button type="button" data-key="9" class="pin-key">
+                            9
+                        </button>
+                        <button
+                            type="button"
+                            data-key="clear"
+                            class="pin-key pin-action error"
+                            aria-label="Clear PIN"
+                        >
+                            ✕
+                        </button>
+                        <button type="button" data-key="0" class="pin-key">
+                            0
+                        </button>
+                        <button
+                            type="button"
+                            data-key="enter"
+                            class="pin-key pin-action success"
+                            aria-label="Submit PIN"
+                        >
+                            ✓
+                        </button>
+                    </div>
+                    <p id="pin-error" role="alert"></p>
+                </section>
 
-        <section id="question-section" class="hidden">
-          <header>
-            <p class="eyebrow">Question</p>
-            <p id="question-progress" class="muted"></p>
-            <h2 id="question-text"></h2>
-          </header>
-          <p id="config-warning" class="warning"></p>
-          <ul id="answer-list"></ul>
-          <p id="question-error" role="alert"></p>
-          <footer id="question-footer"></footer>
-        </section>
+                <section id="question-section" class="hidden">
+                    <header>
+                        <h2 id="question-text"></h2>
+                    </header>
+                    <p id="config-warning" class="warning"></p>
+                    <ul id="answer-list"></ul>
+                    <p id="question-error" role="alert"></p>
+                    <footer id="question-footer"></footer>
+                </section>
 
-        <section id="award-section" class="hidden award-card">
-          <p class="eyebrow">Award</p>
-          <h2>Congratulations!</h2>
-          <p id="award-name"></p>
-          <p id="award-details" class="muted"></p>
-          <button id="restart-btn" class="secondary">Restart Quiz</button>
-        </section>
-      </main>
-    </div>
-    <button id="config-hotspot" aria-label="Open configuration"></button>
-    <button id="pin-hotspot" aria-label="Show PIN screen"></button>
-    <script src="./quizRenderer.js"></script>
-  </body>
+                <section id="award-section" class="hidden award-screen">
+                    <div class="award-message">
+                        <p class="award-congrats">ЧЕСТИТО!</p>
+                        <p class="award-congrats">ТИ СПЕЧЕЛИ!</p>
+                    </div>
+                    <div class="award-prize">
+                        <span
+                            class="award-prize-star"
+                            aria-hidden="true"
+                        ></span>
+                        <p id="award-name" class="award-name-display"></p>
+                    </div>
+                    <button id="restart-btn" class="secondary light">
+                        Ново участие
+                    </button>
+                </section>
+            </main>
+        </div>
+        <button id="config-hotspot" aria-label="Open configuration"></button>
+        <button id="pin-hotspot" aria-label="Show PIN screen"></button>
+        <script src="./quizRenderer.js"></script>
+    </body>
 </html>

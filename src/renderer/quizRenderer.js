@@ -4,14 +4,13 @@ const pinError = document.getElementById("pin-error");
 const pinSection = document.getElementById("pin-section");
 const questionSection = document.getElementById("question-section");
 const questionText = document.getElementById("question-text");
-const questionProgress = document.getElementById("question-progress");
 const questionError = document.getElementById("question-error");
 const answerList = document.getElementById("answer-list");
 const awardSection = document.getElementById("award-section");
 const awardName = document.getElementById("award-name");
-const awardDetails = document.getElementById("award-details");
 const restartButton = document.getElementById("restart-btn");
 const pinKeypad = document.getElementById("pin-keypad");
+const pinDisplay = document.getElementById("pin-display");
 const configWarning = document.getElementById("config-warning");
 const configHotspot = document.getElementById("config-hotspot");
 const pinHotspot = document.getElementById("pin-hotspot");
@@ -31,6 +30,37 @@ let nonWorkingIndex = -1;
 let nonWorkingActive = false;
 let isClosed = false;
 let currentMode = "idle";
+let pinSlots = [];
+
+const ensurePinSlots = () => {
+  if (!pinDisplay || !pinInput) return [];
+  const desired =
+    Number(pinDisplay.dataset.slots) || Number(pinInput.maxLength) || 6;
+  const current = pinDisplay.querySelectorAll(".pin-slot");
+  if (current.length === desired) {
+    return Array.from(current);
+  }
+
+  pinDisplay.innerHTML = "";
+  for (let index = 0; index < desired; index += 1) {
+    const slot = document.createElement("span");
+    slot.className = "pin-slot";
+    slot.dataset.pinSlot = String(index);
+    pinDisplay.appendChild(slot);
+  }
+  return Array.from(pinDisplay.querySelectorAll(".pin-slot"));
+};
+
+const refreshPinDisplay = () => {
+  if (!pinDisplay || !pinInput) return;
+  pinSlots = ensurePinSlots();
+  const value = pinInput.value || "";
+  pinSlots.forEach((slot, index) => {
+    const filled = Boolean(value[index]);
+    slot.classList.toggle("filled", filled);
+    slot.textContent = filled ? value[index] : "";
+  });
+};
 
 const hasQuestions = () => Boolean(quizData?.questions?.length);
 
@@ -47,8 +77,7 @@ const hideAwardSection = () => {
 };
 
 const updateAnswerOptionClasses = (reveal = false) => {
-  const question =
-    quizData?.questions?.[currentQuestionIndex ?? 0];
+  const question = quizData?.questions?.[currentQuestionIndex ?? 0];
   if (!question) return;
 
   answerList.querySelectorAll(".answer-option").forEach((option) => {
@@ -189,6 +218,7 @@ const showPinScreen = (message) => {
   awardSection.classList.add("hidden");
   setMode("pin");
   pinInput.focus?.();
+  refreshPinDisplay();
 };
 
 const resetForNextPlayer = ({ message, showPin } = {}) => {
@@ -196,6 +226,9 @@ const resetForNextPlayer = ({ message, showPin } = {}) => {
   pinInput.value = "";
   selectedAnswer = null;
   pinError.textContent = message || "";
+  refreshPinDisplay();
+  awardSection.classList.add("hidden");
+  questionSection.classList.add("hidden");
 
   if (isClosed || !showPin) {
     showIdleScreen();
@@ -231,16 +264,19 @@ const handleKeypadInput = (key) => {
     if (pinInput.value.length < Number(pinInput.maxLength || 10)) {
       pinInput.value += key;
     }
+    refreshPinDisplay();
     return;
   }
 
   if (key === "del") {
     pinInput.value = pinInput.value.slice(0, -1);
+    refreshPinDisplay();
     return;
   }
 
   if (key === "clear") {
     pinInput.value = "";
+    refreshPinDisplay();
     return;
   }
 
@@ -259,6 +295,9 @@ if (pinKeypad) {
     handleKeypadInput(key);
   });
 }
+
+pinInput?.addEventListener("input", refreshPinDisplay);
+refreshPinDisplay();
 
 const updateConfigWarning = () => {
   if (!configWarning) return;
@@ -436,7 +475,6 @@ const renderQuestion = () => {
   if (!hasQuestions()) {
     questionText.textContent =
       "No questions available. Please import a new Excel file.";
-    questionProgress.textContent = "";
     questionError.textContent = "";
     answerList.innerHTML = "";
     return;
@@ -449,7 +487,6 @@ const renderQuestion = () => {
 
   const question = quizData.questions[currentQuestionIndex];
   questionText.textContent = question?.question || "Question";
-  questionProgress.textContent = "Question";
   questionError.textContent = "";
   answerList.innerHTML = "";
   selectedAnswer = null;
@@ -503,13 +540,7 @@ const handleAwardReveal = async () => {
     return;
   }
 
-  const remainingLabel =
-    typeof response.award?.remaining === "number"
-      ? `(${response.award.remaining} remaining)`
-      : "";
-
   awardName.textContent = response.award?.name || "Mystery Prize";
-  awardDetails.textContent = remainingLabel;
   awardSection.classList.remove("hidden");
   questionSection.classList.add("hidden");
   setOverlayVisible(true);
@@ -556,6 +587,9 @@ pinForm.addEventListener("submit", async (event) => {
     pinError.textContent = "We are currently closed.";
     return;
   }
+  if (pinForm.dataset.submitting === "true") {
+    return;
+  }
   const pin = pinInput.value.trim();
   pinError.textContent = "";
 
@@ -564,18 +598,20 @@ pinForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  pinForm.querySelector("button").disabled = true;
+  pinForm.dataset.submitting = "true";
   const response = await window.quizAPI.validatePin(pin);
-  pinForm.querySelector("button").disabled = false;
+  delete pinForm.dataset.submitting;
 
   if (!response.success) {
     pinError.textContent = response.message || "Unable to validate PIN.";
     pinInput.value = "";
+    refreshPinDisplay();
     return;
   }
 
   unlocked = true;
   pinInput.value = "";
+  refreshPinDisplay();
   pinSection.classList.add("hidden");
   questionSection.classList.remove("hidden");
   resetQuizFlow(response.quiz, { resetIndex: true });

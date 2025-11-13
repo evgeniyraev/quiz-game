@@ -1,0 +1,139 @@
+%!Adobe-FontList 1.25
+%Locale:0x409
+
+%BeginFont
+Handler:DirectoryHandler
+FontType:Invalid
+OutlineFileName:/Users/evgeniyraev/Library/Mobile Documents/com~apple~CloudDocs/work/Kuki/2025/References/MoS-BlackFriday-App/MoS-BlackFriday-App_October2025_1080x1920px Folder/Document fonts/AdobeFnt24.lst
+FileLength:3181
+FileModTime:782819830
+%EndFont
+
+%BeginFont
+Handler:DirectoryHandler
+FontType:Invalid
+OutlineFileName:/Users/evgeniyraev/Library/Mobile Documents/com~apple~CloudDocs/work/Kuki/2025/References/MoS-BlackFriday-App/MoS-BlackFriday-App_October2025_1080x1920px Folder/Document fonts/AdobeFnt25.lst
+FileLength:3725
+FileModTime:784686831
+%EndFont
+
+%BeginFont
+Handler:DirectoryHandler
+FontType:Type1
+FontName:GaramondPremrPro-Bd
+FamilyName:Garamond Premier Pro
+StyleName:Bold
+MenuName:Garamond Premr Pro
+StyleBits:2
+WeightClass:700
+WidthClass:5
+AngleClass:0
+FullName:Garamond Premier Pro Bold
+WritingScript:Roman
+OutlineFileName:/Users/evgeniyraev/Library/Mobile Documents/com~apple~CloudDocs/work/Kuki/2025/References/MoS-BlackFriday-App/MoS-BlackFriday-App_October2025_1080x1920px Folder/Document fonts/GaramondPremrPro-Bd.otf
+DataFormat:sfntData
+UsesStandardEncoding:yes
+isCFF:yes
+hasSVG:no
+hasSBIX:no
+hasCOLR:no
+VariableFontType:NonVariableFont
+FileLength:354796
+FileModTime:136399034
+DesignSize:110
+NameArray:0,Mac,18,Garamond Premr Pro Bold
+NameArray:0,Mac,4,Garamond Premier Pro Bold
+NameArray:0,Win,1,Garamond Premr Pro
+NameArray:0,Win,16,Garamond Premier Pro
+%EndFont
+
+%BeginFont
+Handler:DirectoryHandler
+FontType:Type1
+FontName:GaramondPremrPro-Disp
+FamilyName:Garamond Premier Pro
+StyleName:Display
+MenuName:Garamond Premr Pro Disp
+StyleBits:0
+WeightClass:400
+WidthClass:5
+AngleClass:0
+FullName:Garamond Premier Pro Display
+WritingScript:Roman
+OutlineFileName:/Users/evgeniyraev/Library/Mobile Documents/com~apple~CloudDocs/work/Kuki/2025/References/MoS-BlackFriday-App/MoS-BlackFriday-App_October2025_1080x1920px Folder/Document fonts/GaramondPremrPro-Disp.otf
+DataFormat:sfntData
+UsesStandardEncoding:yes
+isCFF:yes
+hasSVG:no
+hasSBIX:no
+hasCOLR:no
+VariableFontType:NonVariableFont
+FileLength:349824
+FileModTime:136399036
+DesignSize:720
+NameArray:0,Mac,18,Garamond Premr Pro Disp
+NameArray:0,Mac,4,Garamond Premier Pro Display
+NameArray:0,Win,1,Garamond Premr Pro Disp
+NameArray:0,Win,16,Garamond Premier Pro
+%EndFont
+
+%BeginFont
+Handler:DirectoryHandler
+FontType:Type1
+FontName:GaramondPremrPro-Med
+FamilyName:Garamond Premier Pro
+StyleName:Medium
+MenuName:Garamond Premr Pro Med
+StyleBits:0
+WeightClass:500
+WidthClass:5
+AngleClass:0
+FullName:Garamond Premier Pro Medium
+WritingScript:Roman
+OutlineFileName:/Users/evgeniyraev/Library/Mobile Documents/com~apple~CloudDocs/work/Kuki/2025/References/MoS-BlackFriday-App/MoS-BlackFriday-App_October2025_1080x1920px Folder/Document fonts/GaramondPremrPro-Med.otf
+DataFormat:sfntData
+UsesStandardEncoding:yes
+isCFF:yes
+hasSVG:no
+hasSBIX:no
+hasCOLR:no
+VariableFontType:NonVariableFont
+FileLength:362588
+FileModTime:136399036
+DesignSize:110
+NameArray:0,Mac,18,Garamond Premr Pro Med
+NameArray:0,Mac,4,Garamond Premier Pro Medium
+NameArray:0,Win,1,Garamond Premr Pro Med
+NameArray:0,Win,16,Garamond Premier Pro
+%EndFont
+
+%BeginFont
+Handler:DirectoryHandler
+FontType:Type1
+FontName:GaramondPremrPro-Smbd
+FamilyName:Garamond Premier Pro
+StyleName:Semibold
+MenuName:Garamond Premr Pro Smbd
+StyleBits:0
+WeightClass:600
+WidthClass:5
+AngleClass:0
+FullName:Garamond Premier Pro Semibold
+WritingScript:Roman
+OutlineFileName:/Users/evgeniyraev/Library/Mobile Documents/com~apple~CloudDocs/work/Kuki/2025/References/MoS-BlackFriday-App/MoS-BlackFriday-App_October2025_1080x1920px Folder/Document fonts/GaramondPremrPro-Smbd.otf
+DataFormat:sfntData
+UsesStandardEncoding:yes
+isCFF:yes
+hasSVG:no
+hasSBIX:no
+hasCOLR:no
+VariableFontType:NonVariableFont
+FileLength:358928
+FileModTime:317242554
+DesignSize:110
+NameArray:0,Mac,18,Garamond Premr Pro Smbd
+NameArray:0,Mac,4,Garamond Premier Pro Semibold
+NameArray:0,Win,1,Garamond Premr Pro Smbd
+NameArray:0,Win,16,Garamond Premier Pro
+%EndFont
+

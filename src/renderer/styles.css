@@ -1,517 +1,740 @@
 :root {
-  color-scheme: dark;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #090b16;
-  color: #f4f6fb;
+    color-scheme: dark;
+    font-family:
+        "GaramondPremrPro",
+        "Inter",
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    background-color: #090b16;
+    color: #f4f6fb;
+}
+
+@font-face {
+    font-family: "GaramondPremrPro";
+    src: url("./assets/GaramondPremrPro-Disp.otf") format("opentype");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GaramondPremrPro";
+    src: url("./assets/GaramondPremrPro-Med.otf") format("opentype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GaramondPremrPro";
+    src: url("./assets/GaramondPremrPro-Smbd.otf") format("opentype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GaramondPremrPro";
+    src: url("./assets/GaramondPremrPro-Bd.otf") format("opentype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
 }
 
 * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-  min-height: 100vh;
-  background: radial-gradient(circle at top, #1c1f3a, #05060f);
-  padding: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #1c1f3a, #05060f);
+    padding: 0;
 }
 
 .screen {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .video-stage {
-  position: absolute;
-  inset: 0;
-  background: #000;
+    position: absolute;
+    inset: 0;
+    background: #000;
 }
 
 #state-video,
 #state-image {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 #state-image {
-  display: none;
+    display: none;
 }
 
 body.config {
-  background: radial-gradient(circle at top, #14261c, #040806);
+    background: radial-gradient(circle at top, #14261c, #040806);
 }
 
 .card {
-  background: rgba(12, 14, 32, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 32px;
-  width: 100%;
-  max-width: 520px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    padding: clamp(24px, 3vw, 48px);
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 35px 100px rgba(4, 5, 15, 0.8);
+    position: relative;
+    overflow: hidden;
 }
 
 .card.overlay {
-  background: rgba(12, 14, 32, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 32px;
-  width: min(520px, calc(100% - 64px));
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+    padding: clamp(32px, 4vw, 64px);
+    width: min(540px, calc(100% - 64px));
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    backdrop-filter: blur(10px);
+}
+
+.card.overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+.card.overlay > * {
+    position: relative;
+    z-index: 1;
 }
 
 .config-card {
-  max-width: 360px;
+    max-width: 360px;
 }
 
 h1,
 h2 {
-  font-weight: 600;
-  margin-bottom: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
 }
 
 .eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 0.75rem;
-  color: #9aa2d5;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.75rem;
+    color: #9aa2d5;
 }
 
 .muted {
-  color: #a7adc9;
-  font-size: 0.85rem;
+    color: #a7adc9;
+    font-size: 0.85rem;
+}
+
+.pin-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 28px;
+    color: #f7f9ff;
+}
+
+.pin-branding-eyebrow {
+    font-size: 0.95rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    font-family: "GaramondPremrPro", "Inter", sans-serif;
+}
+
+.pin-branding-title {
+    font-size: clamp(2.4rem, 4vw, 3.5rem);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    font-family: "GaramondPremrPro", "Inter", sans-serif;
+}
+
+.pin-branding-title span {
+    display: inline-block;
+}
+
+.pin-branding-tagline {
+    margin-top: 6px;
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-family: "GaramondPremrPro", "Inter", sans-serif;
+}
+
+.pin-instruction {
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
 }
 
 #pin-form {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
 }
 
-#pin-keypad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 20px;
+#pin-display {
+    display: flex;
+    justify-content: center;
+    gap: clamp(8px, 2vw, 16px);
+    margin-top: 8px;
+    width: 100%;
 }
 
-#pin-keypad button {
-  padding: 18px 0;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.pin-slot {
+    width: clamp(48px, 8vw, 64px);
+    height: 98px;
+    background: white;
+    color: #05060f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1.5rem, 3vw, 2.4rem);
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
-#pin-keypad button.wide {
-  grid-column: span 3;
+.pin-slot.filled {
+    background: #ffffff;
 }
 
-#pin-keypad button.small {
-  font-size: 0.85rem;
+.pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(72px, 1fr));
+    gap: clamp(12px, 2vw, 20px);
+    width: 100%;
+    margin-top: 12px;
+    justify-items: center;
 }
 
-#pin-input {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  font-size: 1.5rem;
-  padding: 16px;
-  color: inherit;
-  letter-spacing: 0.4rem;
-  text-align: center;
+.pin-key {
+    width: 100%;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    background: white;
+    border: balck;
+    color: black;
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 600;
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+    box-shadow:
+        inset 0 0 12px rgba(255, 255, 255, 0.08),
+        0 8px 20px rgba(0, 0, 0, 0.45);
 }
 
-button {
-  border: none;
-  padding: 0 20px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #5f5fff, #7b15ff);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
+.pin-key:active {
+    transform: scale(0.95);
 }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.pin-action {
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    color: #05060f;
+}
+
+.pin-action.error {
+    background: linear-gradient(135deg, #ff5f6d, #ffc371);
+}
+
+.pin-action.success {
+    background: linear-gradient(135deg, #4dd4ac, #a0ff8d);
 }
 
 #pin-error {
-  color: #ff6b6b;
-  min-height: 1.2rem;
-  margin-top: 12px;
+    color: #ff9d9d;
+    min-height: 1.5rem;
+    margin-top: 8px;
+    text-align: center;
+}
+
+button {
+    border: none;
+    padding: 0 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #5f5fff, #7b15ff);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family:
+        "GaramondPremrPro",
+        "Inter",
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#pin-error {
+    color: #ff6b6b;
+    min-height: 1.2rem;
+    margin-top: 12px;
 }
 
 .hidden {
-  display: none;
+    display: none !important;
 }
 
 #question-section {
-  border: 1px solid transparent;
-  border-radius: 16px;
-  padding: 16px;
-  margin-top: 16px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 16px;
 }
 
 .warning {
-  color: #f6c177;
-  margin: 8px 0 0;
-  min-height: 1rem;
+    color: #f6c177;
+    margin: 8px 0 0;
+    min-height: 1rem;
 }
 
 #answer-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
 }
 
 #answer-list li {
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 16px;
-  min-height: 64px;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 64px;
 }
 
 #answer-list .label {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 16px;
-  font-weight: 600;
-  color: #8fb0ff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    font-weight: 600;
+    color: #8fb0ff;
 }
 
 #answer-list .text {
-  flex: 1;
-  font-size: 1.05rem;
+    flex: 1;
+    font-size: 1.05rem;
 }
 
 .answer-option {
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    transition:
+        border-color 0.2s,
+        background 0.2s;
 }
 
 .answer-option.selected {
-  border-color: #7b15ff;
-  background: rgba(123, 21, 255, 0.15);
+    border-color: #7b15ff;
+    background: rgba(123, 21, 255, 0.15);
 }
 
 .answer-option.correct {
-  border-color: #3dd598;
-  background: rgba(61, 213, 152, 0.15);
+    border-color: #3dd598;
+    background: rgba(61, 213, 152, 0.15);
 }
 
 .answer-option.incorrect {
-  border-color: #ff6b6b;
+    border-color: #ff6b6b;
 }
 
 #question-progress {
-  margin: 4px 0 12px;
+    margin: 4px 0 12px;
 }
 
 #question-footer {
-  min-height: 24px;
-  margin-top: 16px;
+    min-height: 24px;
+    margin-top: 16px;
 }
 
 #question-error {
-  color: #ff8585;
-  min-height: 1.2rem;
-  margin-top: 12px;
+    color: #ff8585;
+    min-height: 1.2rem;
+    margin-top: 12px;
 }
 
 #question-section {
-  transition: border-color 0.2s, background 0.2s;
+    transition:
+        border-color 0.2s,
+        background 0.2s;
 }
 
 #question-section.correct-state {
-  border: 1px solid rgba(61, 213, 152, 0.8);
-  background: rgba(61, 213, 152, 0.1);
+    border: 1px solid rgba(61, 213, 152, 0.8);
+    background: rgba(61, 213, 152, 0.1);
 }
 
 #question-section.incorrect-state {
-  border: 1px solid rgba(255, 107, 107, 0.8);
-  background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.8);
+    background: rgba(255, 107, 107, 0.1);
 }
 
-.award-card {
-  text-align: center;
-  margin-top: 16px;
+.award-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+    padding-top: clamp(8px, 2vw, 16px);
+    color: #f7f9ff;
 }
 
-.award-card #award-name {
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin: 12px 0;
+.award-branding .pin-branding-title {
+    font-size: clamp(2rem, 3vw, 3rem);
 }
 
-.award-card #award-details {
-  margin-bottom: 20px;
+.award-message {
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: "GaramondPremrPro", "Inter", sans-serif;
+}
+
+.award-congrats {
+    margin: 0;
+}
+
+.award-prize {
+    position: relative;
+    padding: clamp(16px, 4vw, 32px);
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.award-prize-star {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: clamp(140px, 40vw, 359px);
+    height: clamp(140px, 40vw, 359px);
+    background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.8),
+        transparent 82%
+    );
+    clip-path: polygon(
+        50% 0%,
+        61% 38%,
+        98% 35%,
+        68% 57%,
+        79% 91%,
+        50% 70%,
+        21% 91%,
+        32% 57%,
+        2% 35%,
+        39% 38%
+    );
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.4));
+    opacity: 0.7;
+    rotate: 20deg;
+}
+
+.award-name-display {
+    position: relative;
+    margin: 0;
+    font-size: clamp(1.8rem, 4vw, 3.2rem);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+    transform: rotate(-5deg);
+    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    font-family: "GaramondPremrPro", "Inter", sans-serif;
+}
+
+.award-details {
+    font-size: 0.95rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: "GaramondPremrPro", "Inter", sans-serif;
 }
 
 button.secondary {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+button.secondary.light {
+    color: #05060f;
+    background: rgba(255, 255, 255, 0.92);
+    border-color: transparent;
 }
 
 #config-hotspot {
-  position: fixed;
-  top: 8px;
-  left: 8px;
-  width: 64px;
-  height: 64px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  z-index: 10;
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    width: 64px;
+    height: 64px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 10;
 }
 
 #config-hotspot:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.6);
-  border-radius: 8px;
+    outline: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
 }
 
 #pin-hotspot {
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  width: 96px;
-  height: 96px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  z-index: 10;
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    width: 96px;
+    height: 96px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 10;
 }
 
 #pin-hotspot:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.6);
-  border-radius: 8px;
+    outline: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
 }
 
 #drop-zone {
-  margin: 24px 0;
-  padding: 32px 24px;
-  border: 2px dashed rgba(255, 255, 255, 0.25);
-  border-radius: 16px;
-  text-align: center;
-  transition: border-color 0.2s, background 0.2s;
+    margin: 24px 0;
+    padding: 32px 24px;
+    border: 2px dashed rgba(255, 255, 255, 0.25);
+    border-radius: 16px;
+    text-align: center;
+    transition:
+        border-color 0.2s,
+        background 0.2s;
 }
 
 #drop-zone.active {
-  border-color: #88f5c1;
-  background: rgba(136, 245, 193, 0.1);
+    border-color: #88f5c1;
+    background: rgba(136, 245, 193, 0.1);
 }
 
 #config-status {
-  min-height: 1.5rem;
-  font-size: 0.9rem;
-  color: #f6c177;
+    min-height: 1.5rem;
+    font-size: 0.9rem;
+    color: #f6c177;
 }
 
 #general-settings,
 #media-settings,
 #non-working {
-  margin-top: 16px;
+    margin-top: 16px;
 }
 
 #playlist-drop {
-  border: 2px dashed rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-  margin-bottom: 12px;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 12px;
 }
 
 #playlist-drop.active {
-  border-color: #8ff5c1;
-  background: rgba(143, 245, 193, 0.08);
+    border-color: #8ff5c1;
+    background: rgba(143, 245, 193, 0.08);
 }
 
 .input-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 .input-row input {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  padding: 8px 10px;
-  color: inherit;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: inherit;
 }
 
 .media-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
 }
 
 .media-grid label {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.85rem;
-  gap: 6px;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    gap: 6px;
 }
 
 .media-grid input {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  padding: 8px 10px;
-  color: inherit;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: inherit;
 }
 
 .button-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
 }
 
 .button-row.small button {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .button-row .danger {
-  background: rgba(255, 107, 107, 0.2);
-  border-color: rgba(255, 107, 107, 0.6);
+    background: rgba(255, 107, 107, 0.2);
+    border-color: rgba(255, 107, 107, 0.6);
 }
 
 #preview {
-  margin-top: 16px;
+    margin-top: 16px;
 }
 
 #preview header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
 }
 
 #preview-answers {
-  list-style: none;
-  margin-top: 12px;
+    list-style: none;
+    margin-top: 12px;
 }
 
 #preview-answers li {
-  margin-bottom: 6px;
+    margin-bottom: 6px;
 }
 
 .correct-answer {
-  color: #8ff5c1;
+    color: #8ff5c1;
 }
 
 #question-count {
-  font-size: 0.85rem;
-  color: #a7adc9;
+    font-size: 0.85rem;
+    color: #a7adc9;
 }
 
 #award-list {
-  list-style: none;
-  margin-top: 12px;
+    list-style: none;
+    margin-top: 12px;
 }
 
 #award-list li {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 #award-list span.label {
-  color: #8ff5c1;
+    color: #8ff5c1;
 }
 
 #playlist-list {
-  list-style: none;
-  margin-top: 12px;
+    list-style: none;
+    margin-top: 12px;
 }
 
 #playlist-list li {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .tab-nav {
-  display: flex;
-  gap: 12px;
-  margin: 16px 0;
+    display: flex;
+    gap: 12px;
+    margin: 16px 0;
 }
 
 .tab-btn {
-  flex: 1;
-  padding: 10px 0;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-  color: inherit;
-  cursor: pointer;
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    cursor: pointer;
 }
 
 .tab-btn.active {
-  background: rgba(95, 95, 255, 0.25);
-  border-color: rgba(95, 95, 255, 0.6);
+    background: rgba(95, 95, 255, 0.25);
+    border-color: rgba(95, 95, 255, 0.6);
 }
 
 .tab-panel.hidden {
-  display: none;
+    display: none;
 }
 
 .callout {
-  border: 1px dashed rgba(255, 255, 255, 0.4);
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 12px;
-  background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .callout.hidden {
-  display: none;
+    display: none;
 }
 
 .media-grid input {
-  border: 1px dashed rgba(255, 255, 255, 0.3);
+    border: 1px dashed rgba(255, 255, 255, 0.3);
 }
 
 .media-grid input.drag-active {
-  border-color: #8ff5c1;
-  background: rgba(143, 245, 193, 0.08);
+    border-color: #8ff5c1;
+    background: rgba(143, 245, 193, 0.08);
 }
 
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
 }
