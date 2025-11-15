@@ -500,7 +500,7 @@ const renderQuestion = () => {
     li.dataset.answer = label;
 
     labelEl.className = "label";
-    labelEl.textContent = label;
+    labelEl.textContent = label + ")";
 
     textEl.className = "text";
     textEl.textContent = text || "—";
