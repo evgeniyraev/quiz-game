@@ -89,7 +89,6 @@ body.config {
 .card {
     width: 100%;
     position: relative;
-    overflow: hidden;
 }
 
 .card.overlay {
@@ -100,17 +99,10 @@ body.config {
     transform: translate(-50%, -50%);
 }
 
-.card.overlay::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    opacity: 0.65;
-    pointer-events: none;
-}
-
 .card.overlay > * {
     position: relative;
     z-index: 1;
+    overflow: visible;
 }
 
 .config-card {
@@ -380,10 +372,10 @@ button:disabled {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start;
     text-align: center;
-    gap: 24px;
-    padding-top: clamp(8px, 2vw, 16px);
-    color: #f7f9ff;
+    /* padding-top: 16px; */
+    top: -20px;
 }
 
 .award-branding .pin-branding-title {
@@ -405,12 +397,13 @@ button:disabled {
 }
 
 .award-prize {
-    position: relative;
-    padding: clamp(16px, 4vw, 32px);
-    min-height: 140px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    overflow: visible;
+    position: relative;
+    max-width: 560px;
+    min-height: 250px;
 }
 
 .award-prize-star {
@@ -442,15 +435,9 @@ button:disabled {
 }
 
 .award-name-display {
-    position: relative;
-    margin: 0;
-    font-size: clamp(1.8rem, 4vw, 3.2rem);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
+    font-size: 3rem;
     font-weight: 600;
-    transform: rotate(-5deg);
-    text-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-    font-family: "GaramondPremrPro", "Inter", sans-serif;
+    white-space: pre-line;
 }
 
 .award-details {
@@ -552,25 +539,31 @@ button.secondary.light {
     color: inherit;
 }
 
-.media-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+.media-column {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
 }
 
-.media-grid label {
+.media-row {
     display: flex;
     flex-direction: column;
-    font-size: 0.85rem;
     gap: 6px;
 }
 
-.media-grid input {
+.media-row input {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 10px;
     padding: 8px 10px;
     color: inherit;
+}
+
+.media-row label.checkbox.inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
 }
 
 .button-row {
@@ -633,6 +626,7 @@ button.secondary.light {
 
 #award-list span.label {
     color: #8ff5c1;
+    white-space: pre-line;
 }
 
 #playlist-list {

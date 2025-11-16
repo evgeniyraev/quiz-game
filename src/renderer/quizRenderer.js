@@ -1,14 +1,18 @@
 const pinForm = document.getElementById("pin-form");
 const pinInput = document.getElementById("pin-input");
-const pinError = document.getElementById("pin-error");
 const pinSection = document.getElementById("pin-section");
+const preQuizSection = document.getElementById("pre-quiz-section");
+const beginQuizButton = document.getElementById("begin-quiz-btn");
+const wrongPinSection = document.getElementById("wrong-pin-section");
+const wrongPinMessage = document.getElementById("wrong-pin-message");
 const questionSection = document.getElementById("question-section");
 const questionText = document.getElementById("question-text");
 const questionError = document.getElementById("question-error");
 const answerList = document.getElementById("answer-list");
 const awardSection = document.getElementById("award-section");
 const awardName = document.getElementById("award-name");
-const restartButton = document.getElementById("restart-btn");
+const loseSection = document.getElementById("lose-section");
+const loseRestartButton = document.getElementById("lose-restart-btn");
 const pinKeypad = document.getElementById("pin-keypad");
 const pinDisplay = document.getElementById("pin-display");
 const configWarning = document.getElementById("config-warning");
@@ -31,6 +35,8 @@ let nonWorkingActive = false;
 let isClosed = false;
 let currentMode = "idle";
 let pinSlots = [];
+let pendingAward = null;
+let awaitingQuizStart = false;
 
 const ensurePinSlots = () => {
   if (!pinDisplay || !pinInput) return [];
@@ -76,6 +82,20 @@ const hideAwardSection = () => {
   questionSection.classList.remove("correct-state", "incorrect-state");
 };
 
+const hideLoseSection = () => {
+  loseSection?.classList.add("hidden");
+};
+
+const hidePreQuizSection = () => {
+  preQuizSection?.classList.add("hidden");
+  awaitingQuizStart = false;
+};
+
+const hideWrongPinSection = () => {
+  wrongPinSection?.classList.add("hidden");
+  if (wrongPinMessage) wrongPinMessage.textContent = "";
+};
+
 const updateAnswerOptionClasses = (reveal = false) => {
   const question = quizData?.questions?.[currentQuestionIndex ?? 0];
   if (!question) return;
@@ -97,6 +117,8 @@ const updateAnswerOptionClasses = (reveal = false) => {
 };
 
 const getMediaUrl = (key) => quizData?.mediaResolved?.[key] || "";
+const getPreQuizLoop = () =>
+  Boolean(quizData?.settings?.media?.preQuizLoop ?? true);
 
 const isImageUrl = (url = "") => /\.(png|jpe?g|gif|webp)$/i.test(url);
 
@@ -169,24 +191,46 @@ const setMode = (mode) => {
   switch (mode) {
     case "quiz":
       nonWorkingActive = false;
-      playMedia(getMediaUrl("quizVideo"), { loop: true });
+      playMedia(getMediaUrl("quizVideo"), {
+        loop: Boolean(quizData?.mediaResolved?.quizLoop ?? true),
+      });
+      break;
+    case "prequiz":
+      nonWorkingActive = false;
+      playMedia(
+        getMediaUrl("preQuizVideo") ||
+          getMediaUrl("quizVideo") ||
+          getMediaUrl("idleVideo"),
+        { loop: getPreQuizLoop() },
+      );
       break;
     case "pin":
       nonWorkingActive = false;
       playMedia(getMediaUrl("pinVideo") || getMediaUrl("idleVideo"), {
-        loop: true,
+        loop: Boolean(quizData?.mediaResolved?.pinLoop ?? true),
       });
       break;
     case "win":
       nonWorkingActive = false;
-      playMedia(getMediaUrl("winVideo"), { loop: true });
+      playMedia(getMediaUrl("winVideo"), {
+        loop: Boolean(quizData?.mediaResolved?.winLoop ?? true),
+      });
       break;
     case "lose":
       nonWorkingActive = false;
       playMedia(getMediaUrl("loseVideo"), {
-        loop: false,
+        loop: Boolean(quizData?.mediaResolved?.loseLoop ?? false),
         onEnded: () => lockQuizForReauth(),
       });
+      break;
+    case "wrongpin":
+      nonWorkingActive = false;
+      playMedia(
+        getMediaUrl("wrongPinVideo") ||
+          getMediaUrl("loseVideo") ||
+          getMediaUrl("idleVideo"),
+        { loop: Boolean(quizData?.mediaResolved?.wrongPinLoop ?? true) },
+      );
       break;
     case "closed":
       nonWorkingActive = true;
@@ -195,7 +239,9 @@ const setMode = (mode) => {
     case "idle":
     default:
       nonWorkingActive = false;
-      playMedia(getMediaUrl("idleVideo"), { loop: true });
+      playMedia(getMediaUrl("idleVideo"), {
+        loop: Boolean(quizData?.mediaResolved?.idleLoop ?? true),
+      });
       break;
   }
 };
@@ -204,18 +250,19 @@ const showIdleScreen = () => {
   pinSection.classList.add("hidden");
   questionSection.classList.add("hidden");
   awardSection.classList.add("hidden");
+  hidePreQuizSection();
+  hideWrongPinSection();
   setOverlayVisible(false);
   setMode(isClosed ? "closed" : "idle");
 };
 
 const showPinScreen = (message) => {
-  if (message) {
-    pinError.textContent = message;
-  }
   setOverlayVisible(true);
   pinSection.classList.remove("hidden");
+  hideWrongPinSection();
   questionSection.classList.add("hidden");
   awardSection.classList.add("hidden");
+  hidePreQuizSection();
   setMode("pin");
   pinInput.focus?.();
   refreshPinDisplay();
@@ -223,12 +270,16 @@ const showPinScreen = (message) => {
 
 const resetForNextPlayer = ({ message, showPin } = {}) => {
   unlocked = false;
+  pendingAward = null;
+  awaitingQuizStart = false;
   pinInput.value = "";
   selectedAnswer = null;
-  pinError.textContent = message || "";
   refreshPinDisplay();
   awardSection.classList.add("hidden");
+  hideLoseSection();
   questionSection.classList.add("hidden");
+  hideWrongPinSection();
+  hidePreQuizSection();
 
   if (isClosed || !showPin) {
     showIdleScreen();
@@ -246,6 +297,9 @@ const showScreensaver = () => {
   pinSection.classList.add("hidden");
   questionSection.classList.add("hidden");
   awardSection.classList.add("hidden");
+  hideLoseSection();
+  hidePreQuizSection();
+  hideWrongPinSection();
   setOverlayVisible(false);
   setMode(isClosed ? "closed" : "idle");
 };
@@ -348,7 +402,6 @@ attachIdleClickHandler(videoStage);
 pinHotspot?.addEventListener("pointerdown", (event) => {
   event.preventDefault();
   if (isClosed) {
-    pinError.textContent = "We are currently closed.";
     return;
   }
 
@@ -472,6 +525,7 @@ setInterval(updateWorkingHoursStatus, 30000);
 
 const renderQuestion = () => {
   questionSection.classList.remove("correct-state", "incorrect-state");
+  hidePreQuizSection();
   if (!hasQuestions()) {
     questionText.textContent =
       "No questions available. Please import a new Excel file.";
@@ -527,24 +581,41 @@ const resetQuizFlow = (quiz, { resetIndex = true } = {}) => {
   }
 
   hideAwardSection();
+  hidePreQuizSection();
   renderQuestion();
 };
 
-const handleAwardReveal = async () => {
-  questionError.textContent = "";
-
-  const response = await window.quizAPI.drawAward();
-
-  if (!response.success) {
-    questionError.textContent = response.message || "Unable to draw an award.";
-    return;
-  }
-
-  awardName.textContent = response.award?.name || "Mystery Prize";
+const showAwardWin = (award) => {
+  awardName.textContent = award?.name || "Mystery Prize";
   awardSection.classList.remove("hidden");
+  hideLoseSection();
   questionSection.classList.add("hidden");
   setOverlayVisible(true);
   setMode("win");
+};
+
+const handleAwardReveal = () => {
+  questionError.textContent = "";
+  if (!pendingAward) {
+    questionError.textContent = "No prizes remain. Please try again later.";
+    showLoseSection("No prizes remain. Please try again later.");
+    return;
+  }
+
+  showAwardWin(pendingAward);
+  pendingAward = null;
+};
+
+const showLoseSection = (message) => {
+  questionSection.classList.add("incorrect-state");
+  questionError.textContent =
+    message || "Incorrect answer. Please re-enter PIN.";
+  awardSection.classList.add("hidden");
+  questionSection.classList.add("hidden");
+  loseSection?.classList.remove("hidden");
+  preQuizSection?.classList.add("hidden");
+  setOverlayVisible(true);
+  setMode("lose");
 };
 
 const revealSelection = () => {
@@ -564,9 +635,7 @@ const selectAnswer = (answerKey) => {
     questionSection.classList.add("correct-state");
     handleAwardReveal();
   } else {
-    questionSection.classList.add("incorrect-state");
-    questionError.textContent = "Incorrect answer. Please re-enter PIN.";
-    setMode("lose");
+    showLoseSection("Incorrect answer. Please re-enter PIN.");
   }
 };
 
@@ -577,24 +646,17 @@ answerList.addEventListener("click", (event) => {
   selectAnswer(option.dataset.answer);
 });
 
-restartButton.addEventListener("click", () => {
-  resetForNextPlayer({ showPin: true });
-});
-
 pinForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (isClosed) {
-    pinError.textContent = "We are currently closed.";
     return;
   }
   if (pinForm.dataset.submitting === "true") {
     return;
   }
   const pin = pinInput.value.trim();
-  pinError.textContent = "";
 
   if (!pin) {
-    pinError.textContent = "Please enter a PIN.";
     return;
   }
 
@@ -603,18 +665,87 @@ pinForm.addEventListener("submit", async (event) => {
   delete pinForm.dataset.submitting;
 
   if (!response.success) {
-    pinError.textContent = response.message || "Unable to validate PIN.";
+    setOverlayVisible(true);
+    setMode("wrongpin");
+    pinInput.value = "";
+    refreshPinDisplay();
+    pinSection.classList.add("hidden");
+    wrongPinSection?.classList.remove("hidden");
+    wrongPinMessage.textContent =
+      response.message || "Invalid PIN. Please try again.";
+    return;
+  }
+
+  if (!response.award) {
+    setOverlayVisible(true);
+    setMode("lose");
     pinInput.value = "";
     refreshPinDisplay();
     return;
   }
 
   unlocked = true;
+  pendingAward = response.award || null;
+  awaitingQuizStart = response.flow !== "grand";
   pinInput.value = "";
   refreshPinDisplay();
+
+  if (response.flow === "grand") {
+    pinSection.classList.add("hidden");
+    questionSection.classList.add("hidden");
+    hidePreQuizSection();
+    showAwardWin(response.award);
+    pendingAward = null;
+    return;
+  }
+
+  // Non-grand prize: show intermediate screen before quiz starts.
   pinSection.classList.add("hidden");
+  awardSection.classList.add("hidden");
+  questionSection.classList.add("hidden");
+  preQuizSection?.classList.remove("hidden");
+  setOverlayVisible(true);
+  setMode("prequiz");
+});
+
+// Start quiz after non-grand PIN success.
+const beginQuiz = () => {
+  if (!awaitingQuizStart) return;
+  awaitingQuizStart = false;
+  preQuizSection?.classList.add("hidden");
   questionSection.classList.remove("hidden");
-  resetQuizFlow(response.quiz, { resetIndex: true });
+  resetQuizFlow(quizData, { resetIndex: true });
+};
+
+beginQuizButton?.addEventListener("click", beginQuiz);
+preQuizSection?.addEventListener("pointerdown", beginQuiz);
+wrongPinSection?.addEventListener("pointerdown", () => {
+  wrongPinSection?.classList.add("hidden");
+  pinInput.value = "";
+  refreshPinDisplay();
+  showPinScreen();
+});
+
+// Global tap handler to advance from pre-quiz or wrong-pin screens by tapping anywhere.
+document.querySelector(".screen")?.addEventListener("pointerdown", () => {
+  if (!preQuizSection?.classList.contains("hidden")) {
+    beginQuiz();
+    return;
+  }
+  if (!wrongPinSection?.classList.contains("hidden")) {
+    wrongPinSection?.classList.add("hidden");
+    pinInput.value = "";
+    refreshPinDisplay();
+    showPinScreen();
+    return;
+  }
+  if (!awardSection.classList.contains("hidden")) {
+    resetForNextPlayer({ showPin: true });
+    return;
+  }
+  if (!loseSection?.classList.contains("hidden")) {
+    resetForNextPlayer({ showPin: true });
+  }
 });
 
 window.quizAPI.onQuizUpdated((quiz) => {
@@ -629,6 +760,9 @@ window.quizAPI.onQuizUpdated((quiz) => {
   }
 
   if (!awardSection.classList.contains("hidden")) {
+    return;
+  }
+  if (!preQuizSection?.classList.contains("hidden")) {
     return;
   }
 

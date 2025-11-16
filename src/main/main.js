@@ -26,10 +26,19 @@ const defaultSettings = () => ({
   },
   media: {
     pinVideo: "",
+    pinLoop: true,
     idleVideo: "",
+    idleLoop: true,
     quizVideo: "",
+    quizLoop: true,
     winVideo: "",
+    winLoop: true,
     loseVideo: "",
+    loseLoop: true,
+    wrongPinVideo: "",
+    wrongPinLoop: true,
+    preQuizVideo: "",
+    preQuizLoop: true,
   },
   nonWorkingPlaylist: [],
   nonWorkingEnabled: false,
@@ -58,10 +67,20 @@ const createDefaultQuizState = () => ({
   lastAward: null,
   settings: defaultSettings(),
   mediaResolved: {
+    pinVideo: "",
+    pinLoop: true,
     idleVideo: "",
+    idleLoop: true,
     quizVideo: "",
+    quizLoop: true,
     winVideo: "",
+    winLoop: true,
     loseVideo: "",
+    loseLoop: true,
+    wrongPinVideo: "",
+    wrongPinLoop: true,
+    preQuizVideo: "",
+    preQuizLoop: true,
     nonWorkingPlaylist: [],
   },
 });
@@ -133,10 +152,19 @@ const updateResolvedMedia = () => {
   const media = quizState.settings.media || {};
   quizState.mediaResolved = {
     pinVideo: resolveMediaPath(media.pinVideo),
+    pinLoop: media.pinLoop !== false,
     idleVideo: resolveMediaPath(media.idleVideo),
+    idleLoop: media.idleLoop !== false,
     quizVideo: resolveMediaPath(media.quizVideo),
+    quizLoop: media.quizLoop !== false,
     winVideo: resolveMediaPath(media.winVideo),
+    winLoop: media.winLoop !== false,
     loseVideo: resolveMediaPath(media.loseVideo),
+    loseLoop: media.loseLoop !== false,
+    wrongPinVideo: resolveMediaPath(media.wrongPinVideo),
+    wrongPinLoop: media.wrongPinLoop !== false,
+    preQuizVideo: resolveMediaPath(media.preQuizVideo),
+    preQuizLoop: media.preQuizLoop !== false,
     nonWorkingPlaylist: (quizState.settings.nonWorkingPlaylist || []).map(
       (item) => ({
         ...item,
@@ -758,6 +786,10 @@ const parseAwardRows = (rows) =>
           0,
         ) || 0;
 
+      const rawType = row.Type || row.type || row.AwardType || row.awardType;
+      const type = typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
+      const isGrand = type === "grand";
+
       const rawCount =
         row.Count ??
         row.count ??
@@ -765,6 +797,11 @@ const parseAwardRows = (rows) =>
         row.remaining ??
         row.Inventory ??
         row.inventory;
+
+      // Ignore informational/summary rows like "lose rate"
+      if (typeof name === "string" && /lose\s*rate/i.test(name.trim())) {
+        return null;
+      }
 
       const isUnlimited =
         (typeof rawCount === "string" &&
@@ -784,6 +821,8 @@ const parseAwardRows = (rows) =>
         remaining: isUnlimited ? -1 : count,
         initialCount: isUnlimited ? null : count,
         unlimited: isUnlimited,
+        type: isGrand ? "grand" : "",
+        isGrand,
       };
     })
     .filter(Boolean);
@@ -977,17 +1016,29 @@ app.on("window-all-closed", () => {
 ipcMain.handle("validate-pin", async (_event, pinAttempt) => {
   let success = await onUserEnterCode(String(pinAttempt || "").trim());
 
-  if (success) {
+  if (!success) {
     return {
-      success: true,
-      quiz: quizState,
+      success: false,
+      code: "INVALID_PIN",
+      message: "Invalid PIN. Please try again.",
     };
   }
 
-  return {
-    success: false,
-    message: "Invalid PIN. Please try again.",
-  };
+  try {
+    const award = drawAward();
+    return {
+      success: true,
+      quiz: quizState,
+      award,
+      flow: award?.isGrand ? "grand" : "quiz",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      code: "NO_PRIZES",
+      message: error?.message || "No prizes remain.",
+    };
+  }
 });
 
 ipcMain.handle("get-quiz", () => quizState);

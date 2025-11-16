@@ -80,27 +80,77 @@
       <section class="tab-panel hidden" data-tab-panel="media" id="media-tab-panel">
         <h2>Media Backgrounds</h2>
         <p class="muted">Drop a video or image onto a field to copy it into the working directory.</p>
-        <div class="media-grid">
-          <label>
-            Pin Video
-            <input id="pin-video-input" type="text" placeholder="pin.mp4" data-media-key="pinVideo" />
-          </label>
-          <label>
-            Idle Video
-            <input id="idle-video-input" type="text" placeholder="idle.mp4" data-media-key="idleVideo" />
-          </label>
-          <label>
-            Quiz Video
-            <input id="quiz-video-input" type="text" placeholder="quiz.mp4" data-media-key="quizVideo" />
-          </label>
-          <label>
-            Win Video
-            <input id="win-video-input" type="text" placeholder="win.mp4" data-media-key="winVideo" />
-          </label>
-          <label>
-            Lose Media
-            <input id="lose-video-input" type="text" placeholder="lose.mp4" data-media-key="loseVideo" />
-          </label>
+        <div class="media-column">
+          <div class="media-row">
+            <label>
+              Pin Video
+              <input id="pin-video-input" type="text" placeholder="pin.mp4" data-media-key="pinVideo" />
+            </label>
+            <label class="checkbox inline">
+              <input id="pin-loop-input" type="checkbox" checked />
+              Loop
+            </label>
+          </div>
+          <div class="media-row">
+            <label>
+              Idle Video
+              <input id="idle-video-input" type="text" placeholder="idle.mp4" data-media-key="idleVideo" />
+            </label>
+            <label class="checkbox inline">
+              <input id="idle-loop-input" type="checkbox" checked />
+              Loop
+            </label>
+          </div>
+          <div class="media-row">
+            <label>
+              Quiz Video
+              <input id="quiz-video-input" type="text" placeholder="quiz.mp4" data-media-key="quizVideo" />
+            </label>
+            <label class="checkbox inline">
+              <input id="quiz-loop-input" type="checkbox" checked />
+              Loop
+            </label>
+          </div>
+          <div class="media-row">
+            <label>
+              Win Video
+              <input id="win-video-input" type="text" placeholder="win.mp4" data-media-key="winVideo" />
+            </label>
+            <label class="checkbox inline">
+              <input id="win-loop-input" type="checkbox" checked />
+              Loop
+            </label>
+          </div>
+          <div class="media-row">
+            <label>
+              Lose Media
+              <input id="lose-video-input" type="text" placeholder="lose.mp4" data-media-key="loseVideo" />
+            </label>
+            <label class="checkbox inline">
+              <input id="lose-loop-input" type="checkbox" checked />
+              Loop
+            </label>
+          </div>
+          <div class="media-row">
+            <label>
+              Wrong PIN Background
+              <input id="wrongpin-video-input" type="text" placeholder="wrongpin.mp4" data-media-key="wrongPinVideo" />
+            </label>
+            <label class="checkbox inline">
+              <input id="wrongpin-loop-input" type="checkbox" checked />
+              Loop
+            </label>
+          </div>
+          <div class="media-row">
+            <label>
+              Pre-Quiz Background
+              <input id="prequiz-video-input" type="text" placeholder="prequiz.mp4" data-media-key="preQuizVideo" />
+            </label>
+            <label class="checkbox inline">
+              <input id="prequiz-loop-input" type="checkbox" checked />
+              Loop
+            </label>
+          </div>
         </div>
         <div class="button-row small">
           <button type="button" id="export-settings-btn">Export YAML</button>

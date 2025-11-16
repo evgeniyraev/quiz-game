@@ -18,10 +18,19 @@ const importSettingsCalloutBtn = document.getElementById(
 const workingStartInput = document.getElementById("working-start");
 const workingEndInput = document.getElementById("working-end");
 const idleVideoInput = document.getElementById("idle-video-input");
+const idleLoopInput = document.getElementById("idle-loop-input");
 const quizVideoInput = document.getElementById("quiz-video-input");
+const quizLoopInput = document.getElementById("quiz-loop-input");
 const winVideoInput = document.getElementById("win-video-input");
+const winLoopInput = document.getElementById("win-loop-input");
 const loseVideoInput = document.getElementById("lose-video-input");
+const loseLoopInput = document.getElementById("lose-loop-input");
+const wrongPinVideoInput = document.getElementById("wrongpin-video-input");
+const wrongPinLoopInput = document.getElementById("wrongpin-loop-input");
 const pinVideoInput = document.getElementById("pin-video-input");
+const pinLoopInput = document.getElementById("pin-loop-input");
+const preQuizVideoInput = document.getElementById("prequiz-video-input");
+const preQuizLoopInput = document.getElementById("prequiz-loop-input");
 const saveSettingsBtn = document.getElementById("save-settings-btn");
 const saveSettingsBtnMedia = document.getElementById("save-settings-btn-media");
 const exportSettingsBtn = document.getElementById("export-settings-btn");
@@ -39,10 +48,20 @@ const defaultSettings = {
   workingDirectory: "",
   workingHours: { start: "09:00", end: "21:00" },
   media: {
+    pinVideo: "",
+    pinLoop: true,
     idleVideo: "",
+    idleLoop: true,
     quizVideo: "",
+    quizLoop: true,
     winVideo: "",
+    winLoop: true,
     loseVideo: "",
+    loseLoop: true,
+    wrongPinVideo: "",
+    wrongPinLoop: true,
+    preQuizVideo: "",
+    preQuizLoop: true,
   },
   nonWorkingPlaylist: [],
   nonWorkingEnabled: false,
@@ -115,7 +134,11 @@ const renderAwards = (awards = []) => {
     const label = document.createElement("span");
     const remaining = document.createElement("span");
 
-    label.textContent = award.name;
+    const typeSuffix =
+      award.type && String(award.type).toLowerCase() === "grand"
+        ? " (Grand)"
+        : "";
+    label.textContent = `${award.name}${typeSuffix}`;
     label.className = "label";
 
     const remainingText = award.unlimited
@@ -235,7 +258,19 @@ const applySettingsToForm = (settings = defaultSettings) => {
   if (quizVideoInput) quizVideoInput.value = settingsState.media.quizVideo;
   if (winVideoInput) winVideoInput.value = settingsState.media.winVideo;
   if (loseVideoInput) loseVideoInput.value = settingsState.media.loseVideo;
+  if (wrongPinVideoInput)
+    wrongPinVideoInput.value = settingsState.media.wrongPinVideo;
   if (pinVideoInput) pinVideoInput.value = settingsState.media.pinVideo;
+  if (preQuizVideoInput) preQuizVideoInput.value = settingsState.media.preQuizVideo;
+  if (idleLoopInput) idleLoopInput.checked = Boolean(settingsState.media.idleLoop);
+  if (quizLoopInput) quizLoopInput.checked = Boolean(settingsState.media.quizLoop);
+  if (winLoopInput) winLoopInput.checked = Boolean(settingsState.media.winLoop);
+  if (loseLoopInput) loseLoopInput.checked = Boolean(settingsState.media.loseLoop);
+  if (wrongPinLoopInput)
+    wrongPinLoopInput.checked = Boolean(settingsState.media.wrongPinLoop);
+  if (pinLoopInput) pinLoopInput.checked = Boolean(settingsState.media.pinLoop);
+  if (preQuizLoopInput)
+    preQuizLoopInput.checked = Boolean(settingsState.media.preQuizLoop);
   renderPlaylist(settingsState.nonWorkingPlaylist);
   updateWorkingDirWarnings();
   updateNonWorkingVisibility();
@@ -352,10 +387,19 @@ const collectSettingsFromForm = () => ({
   },
   media: {
     pinVideo: pinVideoInput?.value.trim() || "",
+    pinLoop: pinLoopInput?.checked ?? true,
     idleVideo: idleVideoInput?.value.trim() || "",
+    idleLoop: idleLoopInput?.checked ?? true,
     quizVideo: quizVideoInput?.value.trim() || "",
+    quizLoop: quizLoopInput?.checked ?? true,
     winVideo: winVideoInput?.value.trim() || "",
+    winLoop: winLoopInput?.checked ?? true,
     loseVideo: loseVideoInput?.value.trim() || "",
+    loseLoop: loseLoopInput?.checked ?? true,
+    wrongPinVideo: wrongPinVideoInput?.value.trim() || "",
+    wrongPinLoop: wrongPinLoopInput?.checked ?? true,
+    preQuizVideo: preQuizVideoInput?.value.trim() || "",
+    preQuizLoop: preQuizLoopInput?.checked ?? true,
   },
 });
 
