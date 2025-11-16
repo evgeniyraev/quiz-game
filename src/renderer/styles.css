@@ -317,23 +317,23 @@ button:disabled {
 
 .answer-option {
     cursor: pointer;
+    border: 2px solid transparent;
     transition:
         border-color 0.2s,
         background 0.2s;
 }
 
 .answer-option.selected {
-    border-color: #7b15ff;
-    background: rgba(123, 21, 255, 0.15);
+    /* border-color: #7b15ff; */
+    /* background: rgba(123, 21, 255, 0.15); */
 }
 
 .answer-option.correct {
-    border-color: #3dd598;
-    background: rgba(61, 213, 152, 0.15);
+    color: #3dd598;
 }
 
 .answer-option.incorrect {
-    border-color: #ff6b6b;
+    color: #ff6b6b;
 }
 
 #question-progress {
@@ -355,17 +355,50 @@ button:disabled {
     font-size: 3.47rem;
     margin: 0 20%;
     width: 60%;
-    padding-top: 350px;
+    padding-top: 500px;
+}
+
+#question-section:not(.hidden) > * {
+    opacity: 0;
+    visibility: hidden;
+    animation: question-appear 0.5s ease forwards;
+    animation-delay: 2.5s;
+}
+
+#question-section header {
+    text-align: center;
+}
+
+#question-section.hidden > * {
+    animation: none;
+}
+
+#award-section:not(.hidden) > * {
+    opacity: 0;
+    visibility: hidden;
+    animation: question-appear 0.5s ease forwards;
+    animation-delay: 2s;
+}
+
+#award-section.hidden > * {
+    animation: none;
+}
+
+@keyframes question-appear {
+    to {
+        opacity: 1;
+        visibility: visible;
+    }
 }
 
 #question-section.correct-state {
-    border: 1px solid rgba(61, 213, 152, 0.8);
-    background: rgba(61, 213, 152, 0.1);
+    /* border: 1px solid rgba(61, 213, 152, 0.8); */
+    /* background: rgba(61, 213, 152, 0.1); */
 }
 
 #question-section.incorrect-state {
-    border: 1px solid rgba(255, 107, 107, 0.8);
-    background: rgba(255, 107, 107, 0.1);
+    /* border: 1px solid rgba(255, 107, 107, 0.8); */
+    /* background: rgba(255, 107, 107, 0.1); */
 }
 
 .award-screen {
@@ -374,7 +407,6 @@ button:disabled {
     align-items: center;
     justify-content: flex-start;
     text-align: center;
-    /* padding-top: 16px; */
     top: -20px;
 }
 
@@ -400,10 +432,10 @@ button:disabled {
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    overflow: visible;
     position: relative;
     max-width: 560px;
-    min-height: 250px;
+    height: 160px;
+    overflow: clip;
 }
 
 .award-prize-star {
@@ -435,8 +467,8 @@ button:disabled {
 }
 
 .award-name-display {
-    font-size: 3rem;
-    font-weight: 600;
+    font-size: 4.4rem;
+    font-weight: 400;
     white-space: pre-line;
 }
 

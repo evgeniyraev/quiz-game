@@ -37,6 +37,7 @@ let currentMode = "idle";
 let pinSlots = [];
 let pendingAward = null;
 let awaitingQuizStart = false;
+let answerTransitionTimer = null;
 
 const ensurePinSlots = () => {
   if (!pinDisplay || !pinInput) return [];
@@ -524,6 +525,10 @@ const startClosedPlaylist = () => {
 setInterval(updateWorkingHoursStatus, 30000);
 
 const renderQuestion = () => {
+  if (answerTransitionTimer) {
+    clearTimeout(answerTransitionTimer);
+    answerTransitionTimer = null;
+  }
   questionSection.classList.remove("correct-state", "incorrect-state");
   hidePreQuizSection();
   if (!hasQuestions()) {
@@ -625,18 +630,24 @@ const revealSelection = () => {
 
 const selectAnswer = (answerKey) => {
   if (!hasQuestions()) return;
+  if (answerTransitionTimer) return;
   selectedAnswer = answerKey;
   revealSelection();
 
   const question = quizData.questions[currentQuestionIndex ?? 0];
   const isCorrect = question.correctAnswer === answerKey;
 
-  if (isCorrect) {
-    questionSection.classList.add("correct-state");
-    handleAwardReveal();
-  } else {
-    showLoseSection("Incorrect answer. Please re-enter PIN.");
-  }
+  questionSection.classList.toggle("correct-state", isCorrect);
+  questionSection.classList.toggle("incorrect-state", !isCorrect);
+
+  answerTransitionTimer = setTimeout(() => {
+    answerTransitionTimer = null;
+    if (isCorrect) {
+      handleAwardReveal();
+    } else {
+      showLoseSection("Incorrect answer. Please re-enter PIN.");
+    }
+  }, 2000);
 };
 
 answerList.addEventListener("click", (event) => {
