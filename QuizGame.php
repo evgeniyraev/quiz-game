@@ -4,7 +4,8 @@
 // -------------------------
 
 const TOTP_SECRET = "my-super-secret-key-123";   // MUST match JS
-const TIME_STEP   = 86400;                       // 24 hours
+const TIME_STEP   = 24 * 60 * 60;                       // 24 hours
+const TZ_OFFSET_SECONDS = 2 * 60 * 60;                     // Set to timezone offset from UTC in seconds (e.g., UTC+3 = 3*3600)
 const MASK_DIGITS = 4;                           // 4-digit mask
 const OUTPUT_DIGITS = 6;                         // digits to display (e.g., 6)
 
@@ -13,8 +14,9 @@ const OUTPUT_DIGITS = 6;                         // digits to display (e.g., 6)
 // -------------------------
 function generate_totp_mask(): int
 {
-    $timestamp = time(); // current seconds since 1970
-    $counter = intdiv($timestamp, TIME_STEP);
+    $timestamp = time(); // current seconds since 1970 (UTC)
+    // Shift day boundary by TZ_OFFSET_SECONDS so one code covers 00:00–23:59 in that zone.
+    $counter = intdiv($timestamp + TZ_OFFSET_SECONDS, TIME_STEP);
 
     // Convert counter to 8-byte big-endian
     $binaryCounter = pack("N*", 0) . pack("N*", $counter);

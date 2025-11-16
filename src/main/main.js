@@ -6,7 +6,8 @@ const { pathToFileURL } = require("url");
 const yaml = require("js-yaml");
 const XLSX = require("xlsx");
 
-const PIN_CODE = process.env.APP_PIN || "4242";
+const { onUserEnterCode } = require("./TOTP");
+
 const isDev = !app.isPackaged;
 const enableMediaTab =
   process.argv.includes("--media-tab") || process.env.ENABLE_MEDIA_TAB === "1";
@@ -756,18 +757,23 @@ const parseAwardRows = (rows) =>
             row["Win Chance"],
           0,
         ) || 0;
-      const count =
-        sanitizeNumber(
-          row.Count ??
-            row.count ??
-            row.Remaining ??
-            row.remaining ??
-            row.Inventory ??
-            row.inventory,
-          0,
-        ) || 0;
 
-      if (!name || probability <= 0 || count <= 0) {
+      const rawCount =
+        row.Count ??
+        row.count ??
+        row.Remaining ??
+        row.remaining ??
+        row.Inventory ??
+        row.inventory;
+
+      const isUnlimited =
+        (typeof rawCount === "string" &&
+          /^(inf(inity)?|unlimited|∞)$/i.test(rawCount.trim())) ||
+        rawCount === -1;
+
+      const count = sanitizeNumber(rawCount, 0) || 0;
+
+      if (!name || probability <= 0 || (!isUnlimited && count <= 0)) {
         return null;
       }
 
@@ -775,8 +781,9 @@ const parseAwardRows = (rows) =>
         id: `award-${index + 1}`,
         name: String(name).trim(),
         probability,
-        remaining: count,
-        initialCount: count,
+        remaining: isUnlimited ? -1 : count,
+        initialCount: isUnlimited ? null : count,
+        unlimited: isUnlimited,
       };
     })
     .filter(Boolean);
@@ -906,7 +913,8 @@ const loadWorkbookFromDirectory = (dirPath) => {
 
 const drawAward = () => {
   const eligibleAwards = quizState.awards.filter(
-    (award) => award.remaining > 0 && award.probability > 0,
+    (award) =>
+      (award.unlimited || award.remaining > 0) && award.probability > 0,
   );
 
   if (!eligibleAwards.length) {
@@ -930,7 +938,9 @@ const drawAward = () => {
     }
   }
 
-  selectedAward.remaining -= 1;
+  if (!selectedAward.unlimited) {
+    selectedAward.remaining -= 1;
+  }
   quizState.lastAward = {
     name: selectedAward.name,
     timestamp: new Date().toISOString(),
@@ -964,17 +974,19 @@ app.on("window-all-closed", () => {
   }
 });
 
-ipcMain.handle("validate-pin", (_event, pinAttempt) => {
-  if (String(pinAttempt || "").trim() !== PIN_CODE) {
+ipcMain.handle("validate-pin", async (_event, pinAttempt) => {
+  let success = await onUserEnterCode(String(pinAttempt || "").trim());
+
+  if (success) {
     return {
-      success: false,
-      message: "Invalid PIN. Please try again.",
+      success: true,
+      quiz: quizState,
     };
   }
 
   return {
-    success: true,
-    quiz: quizState,
+    success: false,
+    message: "Invalid PIN. Please try again.",
   };
 });
 

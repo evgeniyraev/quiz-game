@@ -118,9 +118,10 @@ const renderAwards = (awards = []) => {
     label.textContent = award.name;
     label.className = "label";
 
-    const remainingText =
-      typeof award.remaining === "number" &&
-      typeof award.initialCount === "number"
+    const remainingText = award.unlimited
+      ? "Unlimited supply"
+      : typeof award.remaining === "number" &&
+          typeof award.initialCount === "number"
         ? `${award.remaining}/${award.initialCount} left`
         : `${award.remaining ?? "?"} remaining`;
 
