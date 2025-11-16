@@ -3,6 +3,9 @@ const TIME_STEP_SECONDS = 60 * 60 * 24; // 24-hour window (midnight to midnight)
 const TZ_OFFSET_SECONDS = 2 * 60 * 60; // Set to your timezone offset from UTC in seconds (e.g., UTC+3 = 3*3600)
 const MASK_DIGITS = 4; // Digits used for the mask
 
+const getDayCounter = (timestampMs = Date.now()) =>
+  Math.floor((timestampMs / 1000 + TZ_OFFSET_SECONDS) / TIME_STEP_SECONDS);
+
 function textToBytes(str) {
   return new TextEncoder().encode(str);
 }
@@ -25,9 +28,7 @@ async function generateTotp(
   timestampMs = Date.now(),
 ) {
   // Use a shifted day boundary controlled by TZ_OFFSET_SECONDS.
-  const counter = Math.floor(
-    (timestampMs / 1000 + TZ_OFFSET_SECONDS) / timeStepSeconds,
-  );
+  const counter = getDayCounter(timestampMs);
 
   const buf = new ArrayBuffer(8);
   const view = new DataView(buf);
@@ -73,4 +74,5 @@ async function onUserEnterCode(codeFromUser) {
 
 module.exports = {
   onUserEnterCode,
+  getDayCounter,
 };

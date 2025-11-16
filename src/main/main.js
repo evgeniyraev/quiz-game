@@ -6,7 +6,7 @@ const { pathToFileURL } = require("url");
 const yaml = require("js-yaml");
 const XLSX = require("xlsx");
 
-const { onUserEnterCode } = require("./TOTP");
+const { onUserEnterCode, getDayCounter } = require("./TOTP");
 
 const isDev = !app.isPackaged;
 const enableMediaTab =
@@ -17,6 +17,7 @@ const PLAYLIST_DIRNAME = "afterhours";
 const EXPORT_MARKER = ".galacticblackfriday";
 const WORKBOOK_BASENAME = "quiz-latest";
 const WORKBOOK_EXTENSIONS = [".xlsx", ".xlsm", ".xlsb", ".xls"];
+const REDEEMED_LOG_FILENAME = "redeemed-codes.log";
 
 const defaultSettings = () => ({
   workingDirectory: "",
@@ -65,6 +66,10 @@ const createDefaultQuizState = () => ({
     updatedAt: new Date().toISOString(),
   },
   lastAward: null,
+  redeemedCodes: {
+    day: getDayCounter(),
+    entries: [],
+  },
   settings: defaultSettings(),
   mediaResolved: {
     pinVideo: "",
@@ -228,6 +233,11 @@ const getWorkingDirectory = () => quizState.settings.workingDirectory || "";
 const getSettingsFilePath = () => {
   const dir = getWorkingDirectory();
   return dir ? path.join(dir, SETTINGS_FILENAME) : "";
+};
+
+const getRedeemedLogPath = () => {
+  const dir = getWorkingDirectory();
+  return dir ? path.join(dir, REDEEMED_LOG_FILENAME) : "";
 };
 
 const writeSettingsYaml = () => {
@@ -439,6 +449,83 @@ const persistQuizState = () => {
   }
 };
 
+const refreshRedeemedCodesDay = () => {
+  const today = getDayCounter();
+  if (!quizState.redeemedCodes || quizState.redeemedCodes.day !== today) {
+    quizState.redeemedCodes = { day: today, entries: [] };
+  }
+};
+
+const parseRedeemedLog = (opts = {}) => {
+  const { dayFilter } = opts;
+  const logPath = getRedeemedLogPath();
+  if (!logPath || !fs.existsSync(logPath)) {
+    return [];
+  }
+
+  try {
+    const raw = fs.readFileSync(logPath, "utf-8");
+    const lines = raw.split(/\r?\n/).filter(Boolean);
+    const entries = lines
+      .map((line) => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    if (typeof dayFilter === "number") {
+      return entries.filter((entry) => {
+        const entryDay =
+          typeof entry.day === "number"
+            ? entry.day
+            : getDayCounter(new Date(entry.timestamp || Date.now()).getTime());
+        return entryDay === dayFilter;
+      });
+    }
+
+    return entries;
+  } catch (error) {
+    console.error("Unable to read redeemed code log:", error);
+    return [];
+  }
+};
+
+const hasCodeRedeemedToday = (code) => {
+  if (!code) return false;
+  const today = getDayCounter();
+  const entries = parseRedeemedLog({ dayFilter: today });
+  return entries.some((entry) => String(entry.code) === String(code));
+};
+
+const recordRedeemedCode = (code, award) => {
+  const today = getDayCounter();
+  const entry = {
+    code: String(code),
+    award: award?.name || "",
+    timestamp: new Date().toISOString(),
+    day: today,
+  };
+  if (hasCodeRedeemedToday(code)) {
+    return;
+  }
+  quizState.redeemedCodes = { day: today, entries: [] };
+  const logPath = getRedeemedLogPath();
+  if (!logPath) {
+    throw new Error("Working directory is not set for redeemed code logging.");
+  }
+  try {
+    ensureDirExists(path.dirname(logPath));
+    fs.appendFileSync(logPath, JSON.stringify(entry) + os.EOL, "utf-8");
+  } catch (error) {
+    console.error("Unable to write redeemed code log:", error);
+    throw error;
+  }
+  persistQuizState();
+};
+
 const hydrateQuizStateFromDisk = () => {
   try {
     const filePath = getPersistPath();
@@ -468,6 +555,7 @@ const hydrateQuizStateFromDisk = () => {
           nonWorkingPlaylist: parsed.settings?.nonWorkingPlaylist || [],
         },
       };
+      refreshRedeemedCodesDay();
       updateResolvedMedia();
     }
   } catch (error) {
@@ -1014,13 +1102,22 @@ app.on("window-all-closed", () => {
 });
 
 ipcMain.handle("validate-pin", async (_event, pinAttempt) => {
-  let success = await onUserEnterCode(String(pinAttempt || "").trim());
+  const pinValue = String(pinAttempt || "").trim();
+  let success = await onUserEnterCode(pinValue);
 
   if (!success) {
     return {
       success: false,
       code: "INVALID_PIN",
       message: "Invalid PIN. Please try again.",
+    };
+  }
+
+  if (hasCodeRedeemedToday(pinValue)) {
+    return {
+      success: false,
+      code: "PIN_ALREADY_USED",
+      message: "This code has already won today. Please try a new code.",
     };
   }
 
@@ -1031,6 +1128,7 @@ ipcMain.handle("validate-pin", async (_event, pinAttempt) => {
       quiz: quizState,
       award,
       flow: award?.isGrand ? "grand" : "quiz",
+      pin: pinValue,
     };
   } catch (error) {
     return {
@@ -1042,6 +1140,23 @@ ipcMain.handle("validate-pin", async (_event, pinAttempt) => {
 });
 
 ipcMain.handle("get-quiz", () => quizState);
+
+ipcMain.handle("redeem-award", async (_event, payload = {}) => {
+  try {
+    const { code, award } = payload;
+    if (!code || !award) {
+      throw new Error("Missing code or award for redemption log.");
+    }
+    if (hasCodeRedeemedToday(code)) {
+      return { success: true, alreadyLogged: true };
+    }
+    recordRedeemedCode(code, award);
+    return { success: true };
+  } catch (error) {
+    console.error("Unable to log redeemed award:", error);
+    return { success: false, message: error.message || "Unable to log award." };
+  }
+});
 
 ipcMain.handle("process-excel", (_event, payload = {}) => {
   try {

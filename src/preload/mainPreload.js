@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('quizAPI', {
   validatePin: (pin) => ipcRenderer.invoke('validate-pin', pin),
   requestQuiz: () => ipcRenderer.invoke('get-quiz'),
   drawAward: () => ipcRenderer.invoke('draw-award'),
+  redeemAward: (payload) => ipcRenderer.invoke('redeem-award', payload),
   focusConfig: () => ipcRenderer.invoke('focus-config'),
   onQuizUpdated: (callback) => {
     ipcRenderer.removeAllListeners('quiz-updated');

@@ -38,6 +38,7 @@ let pinSlots = [];
 let pendingAward = null;
 let awaitingQuizStart = false;
 let answerTransitionTimer = null;
+let lastPinCode = "";
 
 const ensurePinSlots = () => {
   if (!pinDisplay || !pinInput) return [];
@@ -118,6 +119,15 @@ const updateAnswerOptionClasses = (reveal = false) => {
 };
 
 const getMediaUrl = (key) => quizData?.mediaResolved?.[key] || "";
+
+const logAwardRedemption = async (award) => {
+  if (!lastPinCode || !award) return;
+  try {
+    await window.quizAPI.redeemAward({ code: lastPinCode, award });
+  } catch (error) {
+    console.error("Failed to log award redemption", error);
+  }
+};
 const getPreQuizLoop = () =>
   Boolean(quizData?.settings?.media?.preQuizLoop ?? true);
 
@@ -608,6 +618,7 @@ const handleAwardReveal = () => {
   }
 
   showAwardWin(pendingAward);
+  logAwardRedemption(pendingAward);
   pendingAward = null;
 };
 
@@ -697,6 +708,7 @@ pinForm.addEventListener("submit", async (event) => {
 
   unlocked = true;
   pendingAward = response.award || null;
+  lastPinCode = response.pin || "";
   awaitingQuizStart = response.flow !== "grand";
   pinInput.value = "";
   refreshPinDisplay();
@@ -706,6 +718,7 @@ pinForm.addEventListener("submit", async (event) => {
     questionSection.classList.add("hidden");
     hidePreQuizSection();
     showAwardWin(response.award);
+    await logAwardRedemption(response.award);
     pendingAward = null;
     return;
   }

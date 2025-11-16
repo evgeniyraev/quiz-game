@@ -61,7 +61,6 @@ body {
     height: 100vh;
     overflow: hidden;
     aspect-ratio: 9 / 16;
-    margin-left: 5%;
 }
 
 .video-stage {
@@ -106,7 +105,6 @@ body.config {
 }
 
 .config-card {
-    max-width: 360px;
 }
 
 h1,
@@ -579,7 +577,7 @@ button.secondary.light {
 
 .media-row {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 6px;
 }
 
