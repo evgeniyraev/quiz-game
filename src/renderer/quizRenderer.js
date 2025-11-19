@@ -40,6 +40,9 @@ let pendingAward = null;
 let awaitingQuizStart = false;
 let answerTransitionTimer = null;
 let lastPinCode = "";
+let pinHoldTimer = null;
+let pinHoldTriggered = false;
+let closedUntilWorkingHours = false;
 
 const ensurePinSlots = () => {
   if (!pinDisplay || !pinInput) return [];
@@ -420,6 +423,36 @@ configHotspot?.addEventListener("pointerdown", startHotspotHold);
   configHotspot?.addEventListener(eventName, cancelHotspotHold);
 });
 
+const startPinHotspotHold = () => {
+  if (pinHoldTimer) return;
+  pinHoldTriggered = false;
+  pinHoldTimer = setTimeout(() => {
+    pinHoldTimer = null;
+    pinHoldTriggered = true;
+    handleEndOfDayToggle();
+  }, HOTSPOT_HOLD_MS);
+};
+
+const cancelPinHotspotHold = () => {
+  if (!pinHoldTimer) return;
+  clearTimeout(pinHoldTimer);
+  pinHoldTimer = null;
+};
+
+const handlePinHotspotTap = () => {
+  if (isClosed) {
+    return;
+  }
+
+  if (currentMode === "idle") {
+    showPinScreen();
+    return;
+  }
+
+  resetQuizFlow(quizData, { resetIndex: true });
+  resetForNextPlayer({ showPin: false });
+};
+
 const attachIdleClickHandler = (element) => {
   element?.addEventListener("pointerdown", () => {
     promptPinFromIdle();
@@ -432,57 +465,53 @@ attachIdleClickHandler(videoStage);
 
 pinHotspot?.addEventListener("pointerdown", (event) => {
   event.preventDefault();
-  if (isClosed) {
-    return;
-  }
-
-  if (currentMode === "idle") {
-    showPinScreen();
-    return;
-  }
-
-  resetQuizFlow(quizData, { resetIndex: true });
-  resetForNextPlayer({ showPin: false });
+  startPinHotspotHold();
 });
 
-const parseTimeToMinutes = (value) => {
-  if (!value) return null;
-  const [hours, minutes] = value.split(":").map((part) => Number(part));
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
-  return hours * 60 + minutes;
-};
+["pointerup", "pointerleave", "pointercancel"].forEach((eventName) => {
+  pinHotspot?.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    if (pinHoldTimer) {
+      cancelPinHotspotHold();
+      if (eventName === "pointerup" && !pinHoldTriggered) {
+        handlePinHotspotTap();
+      }
+      return;
+    }
+    if (pinHoldTriggered) {
+      pinHoldTriggered = false;
+      return;
+    }
+    if (eventName === "pointerup") {
+      handlePinHotspotTap();
+    }
+  });
+});
 
-const isWithinWorkingHours = () => {
-  const workingHours = quizData?.settings?.workingHours;
-  if (!workingHours) return true;
-  const start = parseTimeToMinutes(workingHours.start);
-  const end = parseTimeToMinutes(workingHours.end);
-  if (start === null || end === null || start === end) return true;
-  const now = new Date();
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  return start < end
-    ? minutes >= start && minutes < end
-    : minutes >= start || minutes < end;
-};
-
-const updateWorkingHoursStatus = () => {
-  const closedNow = !isWithinWorkingHours();
-  if (closedNow && !isClosed) {
-    enterClosedMode();
-  } else if (!closedNow && isClosed) {
+const handleEndOfDayToggle = () => {
+  if (!isWithinWorkingHours()) {
+    if (!isClosed) {
+      enterClosedMode({ lockUntilWorkingHours: true });
+    }
+    return;
+  }
+  if (isClosed && !closedUntilWorkingHours) {
     exitClosedMode();
   }
 };
 
-const enterClosedMode = () => {
+const enterClosedMode = ({ lockUntilWorkingHours = false } = {}) => {
   isClosed = true;
   nonWorkingActive = false;
+  closedUntilWorkingHours = lockUntilWorkingHours || closedUntilWorkingHours;
+  const message = lockUntilWorkingHours
+    ? "End of day. See you next shift."
+    : "We are currently closed for the day.";
   if (configWarning) {
-    configWarning.textContent =
-      "We are currently closed. Please come back during working hours.";
+    configWarning.textContent = message;
   }
   resetForNextPlayer({
-    message: "We are currently closed. Please come back during working hours.",
+    message,
     showPin: false,
   });
 };
@@ -490,6 +519,7 @@ const enterClosedMode = () => {
 const exitClosedMode = () => {
   isClosed = false;
   nonWorkingActive = false;
+  closedUntilWorkingHours = false;
   resetForNextPlayer({ showPin: false });
   updateConfigWarning();
 };
@@ -528,6 +558,33 @@ const pickNextNonWorkingIndex = () => {
   return nonWorkingIndex;
 };
 
+const parseTimeToMinutes = (value) => {
+  if (!value) return null;
+  const [hours, minutes] = value.split(":").map((part) => Number(part));
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return hours * 60 + minutes;
+};
+
+const isWithinWorkingHours = () => {
+  const workingHours = quizData?.settings?.workingHours;
+  if (!workingHours) return true;
+  const start = parseTimeToMinutes(workingHours.start);
+  const end = parseTimeToMinutes(workingHours.end);
+  if (start === null || end === null || start === end) return true;
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  return start < end
+    ? minutes >= start && minutes < end
+    : minutes >= start || minutes < end;
+};
+
+const updateWorkingHoursStatus = () => {
+  if (closedUntilWorkingHours && isWithinWorkingHours()) {
+    exitClosedMode();
+    closedUntilWorkingHours = false;
+  }
+};
+
 const startClosedPlaylist = () => {
   const playlist = quizData?.mediaResolved?.nonWorkingPlaylist || [];
   if (!playlist.length) {
@@ -552,7 +609,7 @@ const startClosedPlaylist = () => {
   });
 };
 
-setInterval(updateWorkingHoursStatus, 30000);
+setInterval(updateWorkingHoursStatus, 60000);
 
 const renderQuestion = () => {
   if (answerTransitionTimer) {
