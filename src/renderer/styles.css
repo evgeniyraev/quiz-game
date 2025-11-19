@@ -51,8 +51,11 @@
 
 body {
     min-height: 100vh;
+    width: 100vw;
     background: radial-gradient(circle at top, #1c1f3a, #05060f);
     padding: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .screen {
@@ -67,6 +70,7 @@ body {
     position: absolute;
     inset: 0;
     background: #000;
+    flex: 1;
 }
 
 #state-video,
