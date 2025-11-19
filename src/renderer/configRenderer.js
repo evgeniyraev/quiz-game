@@ -1,5 +1,6 @@
 const dropZone = document.getElementById("drop-zone");
 const statusEl = document.getElementById("config-status");
+const dropZoneError = document.getElementById("drop-zone-error");
 const previewQuestion = document.getElementById("preview-question");
 const previewAnswers = document.getElementById("preview-answers");
 const previewMeta = document.getElementById("preview-meta");
@@ -81,6 +82,14 @@ const setStatus = (message, tone = "info") => {
   statusEl.textContent = message || "";
   statusEl.style.color =
     tone === "error" ? "#ff8585" : tone === "success" ? "#8ff5c1" : "#f6c177";
+};
+
+const setDropZoneMessage = (message = "") => {
+  if (!dropZoneError || !dropZone) return;
+  const hasMessage = Boolean(message);
+  dropZoneError.textContent = message || "";
+  dropZoneError.classList.toggle("hidden", !hasMessage);
+  dropZone.classList.toggle("error", hasMessage);
 };
 
 const describeQuestions = (questions = []) => {
@@ -313,15 +322,19 @@ const buildPayload = async (file) => {
 
 const handleFileList = async (files) => {
   if (!files?.length) return;
+  setDropZoneMessage("");
   const file = files[0];
 
   if (!settingsState.workingDirectory) {
     setStatus("Please select a working directory before importing.", "error");
+    setDropZoneMessage("Select a working directory before importing.");
     return;
   }
 
-  if (!file.name.endsWith(".xlsx")) {
-    setStatus("Only .xlsx files are supported.", "error");
+  if (!file.name.toLowerCase().endsWith(".xlsx")) {
+    const message = "Only .xlsx files are supported.";
+    setStatus(message, "error");
+    setDropZoneMessage(message);
     return;
   }
 
@@ -331,10 +344,13 @@ const handleFileList = async (files) => {
   const result = await window.configAPI.importExcel(payload);
 
   if (!result.success) {
-    setStatus(result.message || "Unable to import file.", "error");
+    const message = result.message || "Unable to import file.";
+    setStatus(message, "error");
+    setDropZoneMessage(message);
     return;
   }
 
+  setDropZoneMessage("");
   setStatus(`Loaded ${file.name}`, "success");
   renderQuizData(result.quiz);
 };

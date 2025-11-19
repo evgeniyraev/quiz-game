@@ -11,9 +11,14 @@ const { onUserEnterCode, getDayCounter } = require("./TOTP");
 const isDev = !app.isPackaged;
 const enableMediaTab =
   process.argv.includes("--media-tab") || process.env.ENABLE_MEDIA_TAB === "1";
+const allowDuplicateCodes =
+  isDev ||
+  process.argv.includes("--allow-duplicate-codes") ||
+  process.env.ALLOW_DUPLICATE_CODES === "1";
 
 const SETTINGS_FILENAME = "settings.yaml";
 const PLAYLIST_DIRNAME = "afterhours";
+const LOGO_DIRNAME = "logos";
 const EXPORT_MARKER = ".galacticblackfriday";
 const WORKBOOK_BASENAME = "quiz-latest";
 const WORKBOOK_EXTENSIONS = [".xlsx", ".xlsm", ".xlsb", ".xls"];
@@ -153,6 +158,21 @@ const resolveMediaPath = (relativePath) => {
   return toFileUrl(absolutePath);
 };
 
+const resolveLogoPath = (logoFile) => {
+  if (!logoFile) return "";
+  const baseDir = quizState.settings.workingDirectory;
+  if (!baseDir) return "";
+  const safeName = path.basename(String(logoFile).trim());
+  if (!safeName) return "";
+  const absolutePath = path.join(baseDir, LOGO_DIRNAME, safeName);
+  if (!fs.existsSync(absolutePath)) {
+    return "";
+  }
+  return toFileUrl(absolutePath);
+};
+
+const resolveAwardLogoUrl = (logoValue) => resolveLogoPath(logoValue);
+
 const updateResolvedMedia = () => {
   const media = quizState.settings.media || {};
   quizState.mediaResolved = {
@@ -177,6 +197,10 @@ const updateResolvedMedia = () => {
       }),
     ),
   };
+
+  (quizState.awards || []).forEach((award) => {
+    award.logoUrl = resolveAwardLogoUrl(award.logo);
+  });
 };
 
 updateResolvedMedia();
@@ -494,7 +518,7 @@ const parseRedeemedLog = (opts = {}) => {
 };
 
 const hasCodeRedeemedToday = (code) => {
-  if (!code) return false;
+  if (allowDuplicateCodes || !code) return false;
   const today = getDayCounter();
   const entries = parseRedeemedLog({ dayFilter: today });
   return entries.some((entry) => String(entry.code) === String(code));
@@ -555,8 +579,10 @@ const hydrateQuizStateFromDisk = () => {
           nonWorkingPlaylist: parsed.settings?.nonWorkingPlaylist || [],
         },
       };
-      refreshRedeemedCodesDay();
       updateResolvedMedia();
+      ensureAwardStateCompatibility();
+      refreshAwardsForToday();
+      refreshRedeemedCodesDay();
     }
   } catch (error) {
     console.error("Unable to load persisted quiz state:", error);
@@ -818,9 +844,67 @@ const parseQuestionRows = (rows) => {
 };
 
 const sanitizeNumber = (value, fallback = 0) => {
-  const num = Number(value);
+  let normalizedValue = value;
+  if (typeof normalizedValue === "string") {
+    const trimmed = normalizedValue.trim();
+    const cleaned = trimmed
+      .replace(/,/g, "")
+      .replace(/%/g, "")
+      .replace(/[^\d.-]/g, "");
+    normalizedValue = cleaned.length ? cleaned : trimmed;
+  }
+  const num = Number(normalizedValue);
   return Number.isFinite(num) ? num : fallback;
 };
+
+const toLowerString = (value) =>
+  typeof value === "string" ? value.trim().toLowerCase() : "";
+
+const parseDateFromValue = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  if (typeof value === "number") {
+    if (XLSX?.SSF?.parse_date_code) {
+      const parsed = XLSX.SSF.parse_date_code(value);
+      if (parsed) {
+        return new Date(
+          Date.UTC(
+            parsed.y,
+            parsed.m - 1,
+            parsed.d,
+            parsed.H,
+            parsed.M,
+            parsed.S,
+          ),
+        );
+      }
+    }
+    return new Date(value);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    // Replace dots with slashes to help Date.parse handle more formats.
+    const normalized = trimmed.replace(/\./g, "/");
+    const parsed = Date.parse(normalized);
+    if (!Number.isNaN(parsed)) {
+      return new Date(parsed);
+    }
+  }
+  return null;
+};
+
+const getDayKeyFromValue = (value) => {
+  const parsed = parseDateFromValue(value);
+  if (!parsed) return null;
+  return String(getDayCounter(parsed.getTime()));
+};
+
+const getTodayDayKey = () => String(getDayCounter());
 
 const parseNonWorkingRows = (rows) =>
   rows
@@ -853,67 +937,332 @@ const parseNonWorkingRows = (rows) =>
     })
     .filter(Boolean);
 
-const parseAwardRows = (rows) =>
-  rows
-    .map((row, index) => {
-      const name =
-        row.Award ||
-        row.award ||
-        row.Prize ||
-        row.prize ||
-        row.Name ||
-        row.name;
-      const probability =
-        sanitizeNumber(
-          row.Probability ??
-            row.probability ??
-            row.Weight ??
-            row.weight ??
-            row["Win %"] ??
-            row["Win Chance"],
-          0,
-        ) || 0;
+const parseCountValue = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^(inf(inity)?|unlimited|∞)$/i.test(trimmed)) {
+      return -1;
+    }
+    const normalized = trimmed.replace(/,/g, "");
+    const num = Number(normalized);
+    return Number.isFinite(num) ? num : null;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  return null;
+};
 
-      const rawType = row.Type || row.type || row.AwardType || row.awardType;
-      const type = typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
-      const isGrand = type === "grand";
+const awardHeaderMatcher = /(award|prize|name|reward)/i;
+const awardTypeMatcher = /type/i;
+const awardLogoMatcher = /logo/i;
+const weightMatcher = /(weight|prob|chance|win|%)/i;
+const countMatcher =
+  /(count|qty|quantity|inventory|stock|remaining|supply|No.)/i;
 
-      const rawCount =
-        row.Count ??
-        row.count ??
-        row.Remaining ??
-        row.remaining ??
-        row.Inventory ??
-        row.inventory;
+const getAwardTableHeaderIndex = (rows = []) =>
+  rows.findIndex((row = []) => {
+    if (!Array.isArray(row)) return false;
+    const normalized = row.map((cell) =>
+      typeof cell === "string" ? cell.trim() : "",
+    );
+    const hasNameColumn = normalized.some((cell) =>
+      awardHeaderMatcher.test(cell || ""),
+    );
+    if (!hasNameColumn) return false;
+    const hasSupportingColumn = normalized.some(
+      (cell) =>
+        weightMatcher.test(cell || "") ||
+        countMatcher.test(cell || "") ||
+        awardLogoMatcher.test(cell || "") ||
+        awardTypeMatcher.test(cell || ""),
+    );
+    return hasSupportingColumn;
+  });
 
-      // Ignore informational/summary rows like "lose rate"
-      if (typeof name === "string" && /lose\s*rate/i.test(name.trim())) {
-        return null;
+const buildAwardColumnDescriptors = (headerRow = [], parentRow = []) =>
+  headerRow.map((cell, index) => {
+    const headerTextRaw = cell ?? "";
+    const parentTextRaw = parentRow[index] ?? "";
+    const headerText = toLowerString(headerTextRaw);
+    const parentText = toLowerString(parentTextRaw);
+    const dateKey =
+      getDayKeyFromValue(headerTextRaw) ?? getDayKeyFromValue(parentTextRaw);
+
+    const descriptor = {
+      index,
+      headerText,
+      parentText,
+      rawHeader: headerTextRaw,
+      rawParent: parentTextRaw,
+      dateKey,
+      role: null,
+    };
+
+    const combinedText = `${headerText} ${parentText}`.trim();
+
+    const headerMatches = (regex) =>
+      regex.test(headerText) ||
+      regex.test(parentText) ||
+      regex.test(combinedText);
+
+    if (dateKey) {
+      if (headerMatches(weightMatcher)) {
+        descriptor.role = "date-probability";
+      } else if (headerMatches(countMatcher)) {
+        descriptor.role = "date-count";
+      } else {
+        descriptor.role = "date-info";
       }
+      return descriptor;
+    }
 
-      const isUnlimited =
-        (typeof rawCount === "string" &&
-          /^(inf(inity)?|unlimited|∞)$/i.test(rawCount.trim())) ||
-        rawCount === -1;
+    if (headerMatches(awardHeaderMatcher)) {
+      descriptor.role = "name";
+    } else if (headerMatches(awardTypeMatcher)) {
+      descriptor.role = "type";
+    } else if (headerMatches(awardLogoMatcher)) {
+      descriptor.role = "logo";
+    } else if (headerMatches(weightMatcher)) {
+      descriptor.role = "probability";
+    } else if (headerMatches(countMatcher)) {
+      descriptor.role = "count";
+    } else {
+      descriptor.role = "info";
+    }
 
-      const count = sanitizeNumber(rawCount, 0) || 0;
+    return descriptor;
+  });
 
-      if (!name || probability <= 0 || (!isUnlimited && count <= 0)) {
-        return null;
-      }
+const applyScheduleToAward = (award, dayKey = getTodayDayKey()) => {
+  if (!award || award.currentDay === dayKey) {
+    return;
+  }
 
-      return {
-        id: `award-${index + 1}`,
-        name: String(name).trim(),
-        probability,
-        remaining: isUnlimited ? -1 : count,
-        initialCount: isUnlimited ? null : count,
-        unlimited: isUnlimited,
-        type: isGrand ? "grand" : "",
-        isGrand,
+  const schedule = award.dailySchedule || {};
+  const entry = schedule[dayKey] || schedule.default || null;
+
+  if (!entry) {
+    award.probability = 0;
+    award.unlimited = false;
+    award.remaining = 0;
+    award.initialCount = 0;
+    award.currentDay = dayKey;
+    return;
+  }
+
+  const probability = sanitizeNumber(entry.probability, 0);
+  award.probability = probability > 0 ? probability : 0;
+
+  const resolvedCount =
+    typeof entry.count === "number" && Number.isFinite(entry.count)
+      ? entry.count
+      : null;
+  const unlimited = Boolean(entry.unlimited) || resolvedCount === -1;
+
+  award.unlimited = unlimited;
+  award.currentDay = dayKey;
+
+  if (unlimited) {
+    award.remaining = -1;
+    award.initialCount = null;
+    return;
+  }
+
+  const countValue = resolvedCount ?? 0;
+  const normalizedCount = countValue > 0 ? countValue : 0;
+  award.remaining = normalizedCount;
+  award.initialCount = normalizedCount;
+};
+
+const refreshAwardsForToday = () => {
+  const todayKey = getTodayDayKey();
+  (quizState.awards || []).forEach((award) => {
+    applyScheduleToAward(award, todayKey);
+  });
+};
+
+const ensureAwardStateCompatibility = () => {
+  (quizState.awards || []).forEach((award, index) => {
+    if (!award.id) {
+      award.id = `award-${index + 1}`;
+    }
+    if (award.logo) {
+      award.logo = path.basename(String(award.logo).trim());
+    }
+    if (!award.dailySchedule) {
+      const baseCount = award.unlimited
+        ? -1
+        : typeof award.initialCount === "number"
+          ? award.initialCount
+          : typeof award.remaining === "number"
+            ? award.remaining
+            : 0;
+      award.dailySchedule = {
+        default: {
+          probability: sanitizeNumber(award.probability, 0),
+          count: baseCount,
+          unlimited: Boolean(award.unlimited),
+        },
       };
+      award.currentDay = null;
+    }
+    award.logoUrl = resolveAwardLogoUrl(award.logo);
+  });
+};
+
+const parseAwardRows = (rows = []) => {
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new Error(
+      "The awards sheet is empty. Please provide prize rows with names and weights.",
+    );
+  }
+
+  const headerIndex = getAwardTableHeaderIndex(rows);
+  if (headerIndex === -1) {
+    throw new Error(
+      "Unable to find the award table header. Ensure one row contains columns such as Prize, Logo, Type, Weight, and Count.",
+    );
+  }
+
+  const headerRow = rows[headerIndex] || [];
+  const parentRow = rows[headerIndex - 1] || [];
+  const descriptors = buildAwardColumnDescriptors(headerRow, parentRow);
+  const dataRows = rows
+    .slice(headerIndex + 1)
+    .filter(
+      (row) =>
+        Array.isArray(row) &&
+        row.some((cell) => String(cell ?? "").trim().length > 0),
+    );
+
+  if (!dataRows.length) {
+    throw new Error(
+      "The awards sheet does not contain any prize rows below the header row.",
+    );
+  }
+
+  const todayKey = getTodayDayKey();
+
+  const parsedAwards = dataRows
+    .map((row, rowIndex) => {
+      const getValueByRole = (role) => {
+        const descriptor = descriptors.find((col) => col.role === role);
+        if (!descriptor) return null;
+        return row[descriptor.index];
+      };
+
+      const getFirstValueByRoles = (roles = []) => {
+        for (const role of roles) {
+          const value = getValueByRole(role);
+          if (value !== undefined && value !== null && value !== "") {
+            return value;
+          }
+        }
+        return null;
+      };
+
+      const rawName = getFirstValueByRoles(["name"]);
+      const name =
+        rawName === null || rawName === undefined ? "" : String(rawName).trim();
+      if (!name || /lose\s*rate/i.test(String(name))) {
+        return null;
+      }
+
+      const rawType = getFirstValueByRoles(["type"]);
+      const normalizedType =
+        typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
+      const isGrand = normalizedType === "grand";
+
+      const rawLogo = getFirstValueByRoles(["logo"]);
+      const logo =
+        rawLogo === null || rawLogo === undefined
+          ? ""
+          : path.basename(String(rawLogo).trim());
+
+      const rawProbability = getFirstValueByRoles(["probability"]);
+      const baseProbability = sanitizeNumber(rawProbability, 0);
+
+      const rawCount = getFirstValueByRoles(["count"]);
+      const baseCount = parseCountValue(rawCount);
+
+      const schedule = {};
+
+      descriptors.forEach((descriptor) => {
+        if (!descriptor.dateKey || !descriptor.role) return;
+        const cellValue = row[descriptor.index];
+        if (cellValue === null || cellValue === undefined || cellValue === "") {
+          return;
+        }
+
+        if (!schedule[descriptor.dateKey]) {
+          schedule[descriptor.dateKey] = {};
+        }
+
+        if (descriptor.role === "date-probability") {
+          schedule[descriptor.dateKey].probability = sanitizeNumber(
+            cellValue,
+            0,
+          );
+        } else if (descriptor.role === "date-count") {
+          const countValue = parseCountValue(cellValue);
+          if (countValue !== null) {
+            schedule[descriptor.dateKey].count = countValue;
+            if (countValue === -1) {
+              schedule[descriptor.dateKey].unlimited = true;
+            }
+          }
+        }
+      });
+
+      if (baseProbability > 0 || baseCount !== null) {
+        schedule.default = {
+          probability: baseProbability,
+          count: baseCount,
+          unlimited: baseCount === -1,
+        };
+      }
+
+      const hasScheduleEntries = Object.keys(schedule).some(
+        (key) => key !== "default",
+      );
+
+      if (!hasScheduleEntries && baseProbability <= 0 && baseCount === null) {
+        return null;
+      }
+
+      const award = {
+        id: `award-${rowIndex + 1}`,
+        name: String(name).trim(),
+        type: isGrand ? "grand" : normalizedType,
+        isGrand,
+        logo,
+        logoUrl: resolveAwardLogoUrl(logo),
+        probability: 0,
+        remaining: 0,
+        initialCount: 0,
+        unlimited: false,
+        currentDay: null,
+        dailySchedule: schedule,
+      };
+
+      applyScheduleToAward(award, todayKey);
+      return award;
     })
     .filter(Boolean);
+
+  if (!parsedAwards.length) {
+    throw new Error(
+      "No valid prizes were found. Check that each prize row includes a name plus either a weight or count for the current day.",
+    );
+  }
+
+  return parsedAwards;
+};
 
 const loadQuizFromWorkbook = (workbook, sourceName) => {
   const questionSheetName = workbook.SheetNames?.[0];
@@ -944,7 +1293,11 @@ const loadQuizFromWorkbook = (workbook, sourceName) => {
 
   if (awardSheetName) {
     const awardSheet = workbook.Sheets[awardSheetName];
-    const awardRows = XLSX.utils.sheet_to_json(awardSheet, { defval: "" });
+    const awardRows = XLSX.utils.sheet_to_json(awardSheet, {
+      header: 1,
+      defval: "",
+      blankrows: false,
+    });
     awards = parseAwardRows(awardRows);
   }
 
@@ -978,6 +1331,8 @@ const loadQuizFromWorkbook = (workbook, sourceName) => {
 
   persistQuizState();
   updateResolvedMedia();
+  ensureAwardStateCompatibility();
+  refreshAwardsForToday();
   writeSettingsYaml();
 };
 
@@ -1039,6 +1394,7 @@ const loadWorkbookFromDirectory = (dirPath) => {
 };
 
 const drawAward = () => {
+  refreshAwardsForToday();
   const eligibleAwards = quizState.awards.filter(
     (award) =>
       (award.unlimited || award.remaining > 0) && award.probability > 0,
@@ -1113,7 +1469,7 @@ ipcMain.handle("validate-pin", async (_event, pinAttempt) => {
     };
   }
 
-  if (hasCodeRedeemedToday(pinValue)) {
+  if (!allowDuplicateCodes && hasCodeRedeemedToday(pinValue)) {
     return {
       success: false,
       code: "PIN_ALREADY_USED",

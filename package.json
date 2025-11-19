@@ -4,7 +4,7 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "startEditing": "electron . -- --media-tab",
+    "startEditing": "electron --inspect=9229 . --media-tab --allow-duplicate-codes",
     "lint": "echo \"No lint step configured\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "bump": "node scripts/bump-version.js",

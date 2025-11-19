@@ -11,6 +11,7 @@ const questionError = document.getElementById("question-error");
 const answerList = document.getElementById("answer-list");
 const awardSection = document.getElementById("award-section");
 const awardName = document.getElementById("award-name");
+const awardLogo = document.getElementById("award-logo");
 const loseSection = document.getElementById("lose-section");
 const loseRestartButton = document.getElementById("lose-restart-btn");
 const pinKeypad = document.getElementById("pin-keypad");
@@ -82,6 +83,11 @@ const hideAwardSection = () => {
   questionSection.classList.remove("hidden");
   questionError.textContent = "";
   questionSection.classList.remove("correct-state", "incorrect-state");
+  if (awardLogo) {
+    awardLogo.src = "";
+    awardLogo.alt = "";
+    awardLogo.classList.add("hidden");
+  }
 };
 
 const hideLoseSection = () => {
@@ -126,6 +132,20 @@ const logAwardRedemption = async (award) => {
     await window.quizAPI.redeemAward({ code: lastPinCode, award });
   } catch (error) {
     console.error("Failed to log award redemption", error);
+  }
+};
+
+const setAwardLogo = (award) => {
+  if (!awardLogo) return;
+  const logoUrl = award?.logoUrl || "";
+  if (logoUrl) {
+    awardLogo.src = logoUrl;
+    awardLogo.alt = `${award?.name || "Prize"} logo`;
+    awardLogo.classList.remove("hidden");
+  } else {
+    awardLogo.src = "";
+    awardLogo.alt = "";
+    awardLogo.classList.add("hidden");
   }
 };
 const getPreQuizLoop = () =>
@@ -602,6 +622,7 @@ const resetQuizFlow = (quiz, { resetIndex = true } = {}) => {
 
 const showAwardWin = (award) => {
   awardName.textContent = award?.name || "Mystery Prize";
+  setAwardLogo(award);
   awardSection.classList.remove("hidden");
   hideLoseSection();
   questionSection.classList.add("hidden");

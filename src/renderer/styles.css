@@ -376,6 +376,8 @@ button:disabled {
     visibility: hidden;
     animation: question-appear 0.5s ease forwards;
     animation-delay: 2s;
+    transform: translate(0, -141px);
+    position: relative;
 }
 
 #award-section.hidden > * {
@@ -428,12 +430,24 @@ button:disabled {
 
 .award-prize {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
     position: relative;
     max-width: 560px;
-    height: 160px;
-    overflow: clip;
+    min-height: 220px;
+    /* overflow: clip; */
+    /* gap: 24px; */
+}
+
+.award-logo {
+    max-width: 400px;
+    max-height: 400px;
+    object-fit: fill;
+    position: absolute;
+    top: 0;
+    overflow: visible;
+    transform: translate(0px, 31px);
 }
 
 .award-prize-star {
@@ -465,9 +479,10 @@ button:disabled {
 }
 
 .award-name-display {
-    font-size: 4.4rem;
+    font-size: 2.5rem;
     font-weight: 400;
     white-space: pre-line;
+    margin-top: 25px;
 }
 
 .award-details {
@@ -523,9 +538,21 @@ button.secondary.light {
         background 0.2s;
 }
 
+#drop-zone.error {
+    border-color: #ff8585;
+    background: rgba(255, 133, 133, 0.08);
+}
+
 #drop-zone.active {
     border-color: #88f5c1;
     background: rgba(136, 245, 193, 0.1);
+}
+
+.drop-zone-error {
+    margin-top: 12px;
+    color: #ff8585;
+    font-size: 0.9rem;
+    min-height: 1.2rem;
 }
 
 #config-status {
