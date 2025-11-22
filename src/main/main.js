@@ -1015,14 +1015,45 @@ const getAwardTableHeaderIndex = (rows = []) =>
     return hasSupportingColumn;
   });
 
-const buildAwardColumnDescriptors = (headerRow = [], parentRow = []) =>
-  headerRow.map((cell, index) => {
+const buildAwardColumnDescriptors = (
+  headerRow = [],
+  parentRow = [],
+  childRow = [],
+) => {
+  let activeParentDateKey = null;
+  let activeParentDateRaw = "";
+
+  return headerRow.map((cell, index) => {
     const headerTextRaw = cell ?? "";
     const parentTextRaw = parentRow[index] ?? "";
+    const childTextRaw = childRow[index] ?? "";
     const headerText = toLowerString(headerTextRaw);
     const parentText = toLowerString(parentTextRaw);
+    const childText = toLowerString(childTextRaw);
+    const headerDateKey = getDayKeyFromValue(headerTextRaw);
+    const parentDateKey = getDayKeyFromValue(parentTextRaw);
+
+    if (parentDateKey) {
+      activeParentDateKey = parentDateKey;
+      activeParentDateRaw =
+        parentTextRaw === null || parentTextRaw === undefined
+          ? ""
+          : parentTextRaw;
+    } else if (
+      typeof parentTextRaw === "string" &&
+      parentTextRaw.trim().length > 0
+    ) {
+      activeParentDateKey = null;
+      activeParentDateRaw = "";
+    }
+
+    const inheritedParentDateKey =
+      !parentDateKey && !parentTextRaw ? activeParentDateKey : null;
+    const inheritedParentRaw =
+      !parentDateKey && !parentTextRaw ? activeParentDateRaw : "";
+
     const dateKey =
-      getDayKeyFromValue(headerTextRaw) ?? getDayKeyFromValue(parentTextRaw);
+      headerDateKey ?? parentDateKey ?? inheritedParentDateKey ?? null;
 
     const descriptor = {
       index,
@@ -1031,14 +1062,23 @@ const buildAwardColumnDescriptors = (headerRow = [], parentRow = []) =>
       rawHeader: headerTextRaw,
       rawParent: parentTextRaw,
       dateKey,
+      dateLabel:
+        dateKey && (headerDateKey || parentDateKey || inheritedParentDateKey)
+          ? headerDateKey
+            ? headerTextRaw
+            : parentDateKey
+              ? parentTextRaw
+              : inheritedParentRaw
+          : null,
       role: null,
     };
 
-    const combinedText = `${headerText} ${parentText}`.trim();
+    const combinedText = `${headerText} ${parentText} ${childText}`.trim();
 
     const headerMatches = (regex) =>
       regex.test(headerText) ||
       regex.test(parentText) ||
+      regex.test(childText) ||
       regex.test(combinedText);
 
     if (dateKey) {
@@ -1068,6 +1108,7 @@ const buildAwardColumnDescriptors = (headerRow = [], parentRow = []) =>
 
     return descriptor;
   });
+};
 
 const applyScheduleToAward = (award, dayKey = getTodayDayKey()) => {
   if (!award || award.currentDay === dayKey) {
@@ -1166,7 +1207,40 @@ const parseAwardRows = (rows = []) => {
 
   const headerRow = rows[headerIndex] || [];
   const parentRow = rows[headerIndex - 1] || [];
-  const descriptors = buildAwardColumnDescriptors(headerRow, parentRow);
+  const childRow = rows[headerIndex + 1] || [];
+  const descriptors = buildAwardColumnDescriptors(headerRow, parentRow, childRow);
+  const formatDateLabel = (value) => {
+    if (value === undefined || value === null) {
+      return "";
+    }
+    const parsedDate = parseDateFromValue(value);
+    if (parsedDate) {
+      return parsedDate.toISOString().split("T")[0];
+    }
+    const text = String(value).trim();
+    return text;
+  };
+  const dateKeyLabels = {};
+  descriptors.forEach((descriptor) => {
+    if (!descriptor.dateKey || dateKeyLabels[descriptor.dateKey]) {
+      return;
+    }
+    const labelSource =
+      descriptor.dateLabel ??
+      descriptor.rawParent ??
+      descriptor.rawHeader ??
+      descriptor.dateKey;
+    dateKeyLabels[descriptor.dateKey] = formatDateLabel(labelSource);
+  });
+  const getDateLabel = (key) => {
+    if (!key) return "this date";
+    const source = dateKeyLabels[key];
+    if (source === undefined || source === null) {
+      return `day ${key}`;
+    }
+    const text = String(source).trim();
+    return text.length ? text : `day ${key}`;
+  };
   const dataRows = rows
     .slice(headerIndex + 1)
     .filter(
@@ -1258,15 +1332,27 @@ const parseAwardRows = (rows = []) => {
         if (dateKeysWithWeights.has(key)) return;
         const entry = schedule[key];
         if (!entry) return;
+        const countValue = entry.count;
         if (
-          typeof entry.count === "number" &&
-          Number.isFinite(entry.count) &&
-          entry.count > 0
+          typeof countValue === "number" &&
+          Number.isFinite(countValue) &&
+          countValue > 0
         ) {
-          entry.probability = entry.count;
-        } else if (schedule.default) {
-          entry.fallbackKey = "default";
+          entry.probability = countValue;
+          return;
         }
+        if (countValue === -1) {
+          throw new Error(
+            `Prize "${name}" on ${getDateLabel(
+              key,
+            )} has unlimited count but no weight. Please provide a weight.`,
+          );
+        }
+        throw new Error(
+          `Prize "${name}" on ${getDateLabel(
+            key,
+          )} is missing a weight. Add a weight or provide a positive count to infer the chance.`,
+        );
       });
 
       if (baseProbability > 0 || baseCount !== null) {
