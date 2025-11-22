@@ -18,6 +18,7 @@ const importSettingsCalloutBtn = document.getElementById(
 );
 const workingStartInput = document.getElementById("working-start");
 const workingEndInput = document.getElementById("working-end");
+const externalSyncInput = document.getElementById("external-sync-input");
 const idleVideoInput = document.getElementById("idle-video-input");
 const idleLoopInput = document.getElementById("idle-loop-input");
 const quizVideoInput = document.getElementById("quiz-video-input");
@@ -48,6 +49,7 @@ const mediaInputs = document.querySelectorAll("[data-media-key]");
 const defaultSettings = {
   workingDirectory: "",
   workingHours: { start: "09:00", end: "21:00" },
+  externalSyncEnabled: false,
   media: {
     pinVideo: "",
     pinLoop: true,
@@ -228,6 +230,9 @@ const updateWorkingDirWarnings = () => {
   if (importWarning) {
     importWarning.classList.toggle("hidden", !(hasDir && needsConfigImport));
   }
+  if (externalSyncInput) {
+    externalSyncInput.disabled = !hasDir;
+  }
   setControlsEnabled(hasDir);
 };
 
@@ -254,6 +259,10 @@ const applySettingsToForm = (settings = defaultSettings) => {
       typeof settings.nonWorkingEnabled === "boolean"
         ? settings.nonWorkingEnabled
         : Boolean(settings.nonWorkingPlaylist?.length),
+    externalSyncEnabled:
+      typeof settings.externalSyncEnabled === "boolean"
+        ? settings.externalSyncEnabled
+        : defaultSettings.externalSyncEnabled,
   };
 
   if (workingDirInput) {
@@ -280,6 +289,8 @@ const applySettingsToForm = (settings = defaultSettings) => {
   if (pinLoopInput) pinLoopInput.checked = Boolean(settingsState.media.pinLoop);
   if (preQuizLoopInput)
     preQuizLoopInput.checked = Boolean(settingsState.media.preQuizLoop);
+  if (externalSyncInput)
+    externalSyncInput.checked = Boolean(settingsState.externalSyncEnabled);
   renderPlaylist(settingsState.nonWorkingPlaylist);
   updateWorkingDirWarnings();
   updateNonWorkingVisibility();
@@ -397,6 +408,7 @@ window.addEventListener("dragover", (event) => event.preventDefault());
 window.addEventListener("drop", (event) => event.preventDefault());
 
 const collectSettingsFromForm = () => ({
+  externalSyncEnabled: externalSyncInput?.checked ?? false,
   workingHours: {
     start: workingStartInput?.value || defaultSettings.workingHours.start,
     end: workingEndInput?.value || defaultSettings.workingHours.end,

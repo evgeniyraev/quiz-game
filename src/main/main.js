@@ -48,6 +48,7 @@ const defaultSettings = () => ({
   },
   nonWorkingPlaylist: [],
   nonWorkingEnabled: false,
+  externalSyncEnabled: false,
 });
 
 const createDefaultQuizState = () => ({
@@ -96,6 +97,9 @@ const createDefaultQuizState = () => ({
 });
 
 let quizState = createDefaultQuizState();
+
+const isExternalSyncEnabled = () =>
+  Boolean(quizState.settings?.externalSyncEnabled);
 
 const getExportableSettings = (settings = quizState.settings) => {
   if (!settings) return {};
@@ -206,6 +210,8 @@ const updateResolvedMedia = () => {
 updateResolvedMedia();
 
 const mergeSettings = (patch = {}, options = {}) => {
+  const prevSyncEnabled = isExternalSyncEnabled();
+
   quizState.settings = {
     ...quizState.settings,
     ...patch,
@@ -221,6 +227,10 @@ const mergeSettings = (patch = {}, options = {}) => {
       typeof patch.nonWorkingEnabled === "boolean"
         ? patch.nonWorkingEnabled
         : quizState.settings.nonWorkingEnabled,
+    externalSyncEnabled:
+      typeof patch.externalSyncEnabled === "boolean"
+        ? patch.externalSyncEnabled
+        : Boolean(quizState.settings.externalSyncEnabled),
   };
 
   if (patch.nonWorkingPlaylist) {
@@ -232,6 +242,11 @@ const mergeSettings = (patch = {}, options = {}) => {
   if (!options.skipYamlWrite) {
     writeSettingsYaml();
   }
+
+  const nextSyncEnabled = isExternalSyncEnabled();
+  if (prevSyncEnabled !== nextSyncEnabled) {
+    applyExternalSyncPreference();
+  }
 };
 
 const resetToDefaults = () => {
@@ -242,6 +257,7 @@ const resetToDefaults = () => {
   if (settingsPath && fs.existsSync(settingsPath)) {
     fs.unlinkSync(settingsPath);
   }
+  applyExternalSyncPreference();
   broadcastQuizUpdate();
 };
 
@@ -577,6 +593,10 @@ const hydrateQuizStateFromDisk = () => {
             ...(parsed.settings?.media || {}),
           },
           nonWorkingPlaylist: parsed.settings?.nonWorkingPlaylist || [],
+          externalSyncEnabled:
+            typeof parsed.settings?.externalSyncEnabled === "boolean"
+              ? parsed.settings.externalSyncEnabled
+              : false,
         },
       };
       updateResolvedMedia();
@@ -661,7 +681,8 @@ const syncToExternal = (destinationDir) => {
 
 const externalImportCache = new Map();
 
-const scanExternalImports = () => {
+function scanExternalImports() {
+  if (!isExternalSyncEnabled()) return;
   const workingDir = getWorkingDirectory();
   if (!workingDir) return;
 
@@ -686,19 +707,28 @@ const scanExternalImports = () => {
       // ignore
     }
   });
-};
+}
 
-const startExternalWatcher = () => {
-  if (externalWatcherTimer) return;
+function startExternalWatcher() {
+  if (externalWatcherTimer || !isExternalSyncEnabled()) return;
   externalWatcherTimer = setInterval(scanExternalImports, 20000);
-};
+}
 
-const stopExternalWatcher = () => {
+function stopExternalWatcher() {
   if (externalWatcherTimer) {
     clearInterval(externalWatcherTimer);
     externalWatcherTimer = null;
   }
-};
+}
+
+function applyExternalSyncPreference() {
+  if (isExternalSyncEnabled()) {
+    scanExternalImports();
+    startExternalWatcher();
+  } else {
+    stopExternalWatcher();
+  }
+}
 
 const broadcastQuizUpdate = () => {
   if (mainWindow) {
@@ -861,6 +891,7 @@ const toLowerString = (value) =>
   typeof value === "string" ? value.trim().toLowerCase() : "";
 
 const parseDateFromValue = (value) => {
+  console.log(value)
   if (value === null || value === undefined || value === "") {
     return null;
   }
@@ -1044,7 +1075,11 @@ const applyScheduleToAward = (award, dayKey = getTodayDayKey()) => {
   }
 
   const schedule = award.dailySchedule || {};
-  const entry = schedule[dayKey] || schedule.default || null;
+  const entry =
+    schedule[dayKey] ||
+    schedule[schedule[dayKey]?.fallbackKey || ""] ||
+    schedule.default ||
+    null;
 
   if (!entry) {
     award.probability = 0;
@@ -1191,23 +1226,22 @@ const parseAwardRows = (rows = []) => {
       const baseCount = parseCountValue(rawCount);
 
       const schedule = {};
+      const dateKeysWithCounts = new Set();
+      const dateKeysWithWeights = new Set();
 
       descriptors.forEach((descriptor) => {
         if (!descriptor.dateKey || !descriptor.role) return;
         const cellValue = row[descriptor.index];
-        if (cellValue === null || cellValue === undefined || cellValue === "") {
-          return;
-        }
-
         if (!schedule[descriptor.dateKey]) {
           schedule[descriptor.dateKey] = {};
         }
 
         if (descriptor.role === "date-probability") {
-          schedule[descriptor.dateKey].probability = sanitizeNumber(
-            cellValue,
-            0,
-          );
+          const weightValue = sanitizeNumber(cellValue, 0);
+          schedule[descriptor.dateKey].probability = weightValue;
+          if (weightValue > 0) {
+            dateKeysWithWeights.add(descriptor.dateKey);
+          }
         } else if (descriptor.role === "date-count") {
           const countValue = parseCountValue(cellValue);
           if (countValue !== null) {
@@ -1215,7 +1249,23 @@ const parseAwardRows = (rows = []) => {
             if (countValue === -1) {
               schedule[descriptor.dateKey].unlimited = true;
             }
+            dateKeysWithCounts.add(descriptor.dateKey);
           }
+        }
+      });
+
+      dateKeysWithCounts.forEach((key) => {
+        if (dateKeysWithWeights.has(key)) return;
+        const entry = schedule[key];
+        if (!entry) return;
+        if (
+          typeof entry.count === "number" &&
+          Number.isFinite(entry.count) &&
+          entry.count > 0
+        ) {
+          entry.probability = entry.count;
+        } else if (schedule.default) {
+          entry.fallbackKey = "default";
         }
       });
 
@@ -1440,8 +1490,7 @@ app.whenReady().then(() => {
   hydrateQuizStateFromDisk();
   createMainWindow();
   createConfigWindow();
-  scanExternalImports();
-  startExternalWatcher();
+  applyExternalSyncPreference();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

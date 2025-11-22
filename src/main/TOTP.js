@@ -3,8 +3,12 @@ const TIME_STEP_SECONDS = 60 * 60 * 24; // 24-hour window (midnight to midnight)
 const TZ_OFFSET_SECONDS = 2 * 60 * 60; // Set to your timezone offset from UTC in seconds (e.g., UTC+3 = 3*3600)
 const MASK_DIGITS = 4; // Digits used for the mask
 
-const getDayCounter = (timestampMs = Date.now()) =>
-  Math.floor((timestampMs / 1000 + TZ_OFFSET_SECONDS) / TIME_STEP_SECONDS);
+const getDayCounter = (timestampMs = Date.now()) => {
+  let value = Math.floor(
+    (timestampMs / 1000 + TZ_OFFSET_SECONDS) / TIME_STEP_SECONDS,
+  );
+  return value;
+};
 
 function textToBytes(str) {
   return new TextEncoder().encode(str);

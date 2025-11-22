@@ -356,14 +356,8 @@ const handleKeypadInput = (key) => {
     return;
   }
 
-  if (key === "del") {
+  if (key === "del" || key === "clear") {
     pinInput.value = pinInput.value.slice(0, -1);
-    refreshPinDisplay();
-    return;
-  }
-
-  if (key === "clear") {
-    pinInput.value = "";
     refreshPinDisplay();
     return;
   }
